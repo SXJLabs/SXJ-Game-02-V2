@@ -7,13 +7,13 @@
 <style>
 body {
   margin: 0;
-  overflow: hidden;
   background: black;
+  overflow: hidden;
   font-family: Arial;
   color: white;
 }
 
-/* SCREEN SYSTEM */
+/* ALL SCREENS */
 .screen {
   position: fixed;
   width: 100%;
@@ -25,19 +25,11 @@ body {
   gap: 12px;
 }
 
-/* EXIT */
-#exitBtn {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 20;
-}
-
-/* BUTTON ANIMATION */
+/* BUTTONS */
 button {
   padding: 14px 20px;
-  border: none;
   border-radius: 10px;
+  border: none;
   transition: 0.15s;
 }
 
@@ -46,7 +38,7 @@ button:active {
   opacity: 0.6;
 }
 
-/* BACK BUTTON ALWAYS SAFE */
+/* BACK BUTTON ALWAYS VISIBLE & SAFE */
 .backBtn {
   position: fixed;
   bottom: 20px;
@@ -81,11 +73,9 @@ canvas {
 
 <body>
 
-<button id="exitBtn" onclick="exitGame()">EXIT</button>
-
 <!-- MENU -->
 <div id="menu" class="screen" style="display:flex;">
-  <button onclick="startGame()">PLAY</button>
+  <button onclick="show('gameStart')">PLAY</button>
   <button onclick="show('settings')">SETTINGS</button>
 </div>
 
@@ -94,6 +84,7 @@ canvas {
   <button onclick="show('player')">Change Player</button>
   <button onclick="show('color')">Change Color</button>
   <button onclick="show('name')">Change Name</button>
+
   <button class="backBtn" onclick="show('menu')">BACK</button>
 </div>
 
@@ -105,6 +96,7 @@ canvas {
   <button onclick="setShape('triangle')">Triangle</button>
   <button onclick="setShape('heart')">Heart</button>
 
+  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
@@ -116,6 +108,7 @@ canvas {
   <button onclick="setColor('blue')" style="background:blue">BLUE</button>
   <button onclick="setColor('white')" style="background:white;color:black">WHITE</button>
 
+  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
@@ -124,10 +117,11 @@ canvas {
   <input id="nameInput" placeholder="Enter name">
   <button onclick="saveName()">SAVE</button>
 
+  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
-<!-- GAME -->
+<!-- GAME CANVAS -->
 <canvas id="game" width="400" height="500"></canvas>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
@@ -135,51 +129,51 @@ canvas {
 
 <script>
 
-/* GAME STATE */
+/* STATE */
 let shape="square";
 let color="white";
 let playerName="SXJ";
 
-let canvas=document.getElementById("game");
-let ctx=canvas.getContext("2d");
-
-let player, objects=[], bullets=[];
-let timer=0, pattern=0;
-let running=false;
-let shieldActive=false;
-
-/* SCREEN SWITCH */
+/* SCREEN CONTROL (ONLY SYSTEM USED) */
 function show(id){
-  ["menu","settings","player","color","name"].forEach(x=>{
-    document.getElementById(x).style.display="none";
-  });
 
-  if(id){
+  // hide all screens
+  document.getElementById("menu").style.display="none";
+  document.getElementById("settings").style.display="none";
+  document.getElementById("player").style.display="none";
+  document.getElementById("color").style.display="none";
+  document.getElementById("name").style.display="none";
+  document.getElementById("game").style.display="none";
+
+  // show requested
+  if(id && document.getElementById(id)){
     document.getElementById(id).style.display="flex";
   }
 }
 
-/* EXIT */
-function exitGame(){
-  window.close();
-  alert("Close tab manually");
-}
-
-/* SETTINGS FIX (NO STUCK ANYMORE) */
+/* SETTINGS */
 function setShape(s){
   shape=s;
-  show("settings"); // auto return so user never gets stuck
 }
 
 function setColor(c){
   color=c;
-  show("settings"); // auto return so user never gets stuck
 }
 
 function saveName(){
   playerName=document.getElementById("nameInput").value || "PLAYER";
   show("settings");
 }
+
+/* GAME INIT */
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
+
+let player, objects=[], bullets=[];
+let running=false;
+let timer=0;
+let pattern=0;
+let shieldActive=false;
 
 /* START GAME */
 function startGame(){
@@ -211,7 +205,7 @@ function shield(){
   setTimeout(()=>shieldActive=false,1200);
 }
 
-/* SPAWN PATTERN */
+/* SPAWN */
 function spawn(){
   let t=pattern%5;
 
