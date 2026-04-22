@@ -46,7 +46,7 @@ button:active {
   opacity: 0.6;
 }
 
-/* BACK BUTTON (CENTER BOTTOM) */
+/* BACK BUTTON ALWAYS SAFE */
 .backBtn {
   position: fixed;
   bottom: 20px;
@@ -133,18 +133,13 @@ canvas {
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="shield()">SHIELD</button>
 
-<!-- BGM -->
-<audio id="bgm" loop>
-  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d1d3c3f1f1.mp3?filename=retro-game-arcade-116819.mp3">
-</audio>
-
 <script>
 
+/* GAME STATE */
 let shape="square";
 let color="white";
 let playerName="SXJ";
 
-/* GAME STATE */
 let canvas=document.getElementById("game");
 let ctx=canvas.getContext("2d");
 
@@ -153,11 +148,12 @@ let timer=0, pattern=0;
 let running=false;
 let shieldActive=false;
 
-/* SCREEN */
+/* SCREEN SWITCH */
 function show(id){
   ["menu","settings","player","color","name"].forEach(x=>{
     document.getElementById(x).style.display="none";
   });
+
   if(id){
     document.getElementById(id).style.display="flex";
   }
@@ -169,24 +165,29 @@ function exitGame(){
   alert("Close tab manually");
 }
 
-/* SETTINGS */
-function setShape(s){ shape=s; }
-function setColor(c){ color=c; }
+/* SETTINGS FIX (NO STUCK ANYMORE) */
+function setShape(s){
+  shape=s;
+  show("settings"); // auto return so user never gets stuck
+}
+
+function setColor(c){
+  color=c;
+  show("settings"); // auto return so user never gets stuck
+}
 
 function saveName(){
-  playerName=document.getElementById("nameInput").value||"PLAYER";
+  playerName=document.getElementById("nameInput").value || "PLAYER";
   show("settings");
 }
 
-/* START */
+/* START GAME */
 function startGame(){
   show("");
 
   canvas.style.display="block";
   document.getElementById("jumpBtn").style.display="block";
   document.getElementById("shieldBtn").style.display="block";
-
-  document.getElementById("bgm").play();
 
   player={x:50,y:400,vy:0,jumping:false,w:30,h:30};
 
@@ -210,13 +211,13 @@ function shield(){
   setTimeout(()=>shieldActive=false,1200);
 }
 
-/* PATTERN */
+/* SPAWN PATTERN */
 function spawn(){
   let t=pattern%5;
 
   if(t===0) objects.push({type:"spike",x:400});
   if(t===1) objects.push({type:"spike",x:460});
-  if(t===2) {} // GAP
+  if(t===2) {}
   if(t===3) objects.push({type:"enemy",x:400,cd:0,name:"SHAN"});
   if(t===4) objects.push({type:"enemy",x:400,cd:0,name:"RAJEEN"});
 
@@ -280,7 +281,6 @@ if(running){
       ctx.fillRect(o.x,380,30,30);
 
       o.cd++;
-
       if(o.cd>60){
         bullets.push({x:o.x,y:400,w:5,h:5});
         o.cd=0;
