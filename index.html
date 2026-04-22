@@ -13,7 +13,7 @@ body {
   color: white;
 }
 
-/* ALL SCREENS */
+/* SCREENS */
 .screen {
   position: fixed;
   width: 100%;
@@ -38,7 +38,7 @@ button:active {
   opacity: 0.6;
 }
 
-/* BACK BUTTON ALWAYS VISIBLE & SAFE */
+/* BACK BUTTON */
 .backBtn {
   position: fixed;
   bottom: 20px;
@@ -75,7 +75,7 @@ canvas {
 
 <!-- MENU -->
 <div id="menu" class="screen" style="display:flex;">
-  <button onclick="show('gameStart')">PLAY</button>
+  <button onclick="startGame()">PLAY</button>
   <button onclick="show('settings')">SETTINGS</button>
 </div>
 
@@ -84,7 +84,6 @@ canvas {
   <button onclick="show('player')">Change Player</button>
   <button onclick="show('color')">Change Color</button>
   <button onclick="show('name')">Change Name</button>
-
   <button class="backBtn" onclick="show('menu')">BACK</button>
 </div>
 
@@ -95,8 +94,6 @@ canvas {
   <button onclick="setShape('rect')">Rectangle</button>
   <button onclick="setShape('triangle')">Triangle</button>
   <button onclick="setShape('heart')">Heart</button>
-
-  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
@@ -107,8 +104,6 @@ canvas {
   <button onclick="setColor('yellow')" style="background:yellow;color:black">YELLOW</button>
   <button onclick="setColor('blue')" style="background:blue">BLUE</button>
   <button onclick="setColor('white')" style="background:white;color:black">WHITE</button>
-
-  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
@@ -116,12 +111,10 @@ canvas {
 <div id="name" class="screen">
   <input id="nameInput" placeholder="Enter name">
   <button onclick="saveName()">SAVE</button>
-
-  <!-- FIXED BACK -->
   <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
-<!-- GAME CANVAS -->
+<!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
@@ -132,40 +125,32 @@ canvas {
 /* STATE */
 let shape="square";
 let color="white";
-let playerName="SXJ";
+let playerName="PLAYER";
 
-/* SCREEN CONTROL (ONLY SYSTEM USED) */
+/* SCREEN CONTROL */
 function show(id){
 
-  // hide all screens
   document.getElementById("menu").style.display="none";
   document.getElementById("settings").style.display="none";
   document.getElementById("player").style.display="none";
   document.getElementById("color").style.display="none";
   document.getElementById("name").style.display="none";
-  document.getElementById("game").style.display="none";
 
-  // show requested
   if(id && document.getElementById(id)){
     document.getElementById(id).style.display="flex";
   }
 }
 
 /* SETTINGS */
-function setShape(s){
-  shape=s;
-}
-
-function setColor(c){
-  color=c;
-}
+function setShape(s){ shape=s; }
+function setColor(c){ color=c; }
 
 function saveName(){
   playerName=document.getElementById("nameInput").value || "PLAYER";
   show("settings");
 }
 
-/* GAME INIT */
+/* GAME SETUP */
 let canvas=document.getElementById("game");
 let ctx=canvas.getContext("2d");
 
@@ -177,6 +162,7 @@ let shieldActive=false;
 
 /* START GAME */
 function startGame(){
+
   show("");
 
   canvas.style.display="block";
@@ -211,7 +197,6 @@ function spawn(){
 
   if(t===0) objects.push({type:"spike",x:400});
   if(t===1) objects.push({type:"spike",x:460});
-  if(t===2) {}
   if(t===3) objects.push({type:"enemy",x:400,cd:0,name:"SHAN"});
   if(t===4) objects.push({type:"enemy",x:400,cd:0,name:"RAJEEN"});
 
