@@ -124,23 +124,17 @@ const ctx=canvas.getContext("2d");
 
 let player, spikes=[], running=false, timer=0;
 
-function startGame(){
-  go(""); // hide menus
-  canvas.style.display="block";
-  jumpBtn.style.display="block";
-  startBtn.style.display="none";
+function go(id){
+  screens.forEach(s => {
+    document.getElementById(s).style.display = "none";
+  });
 
-  player={x:50,y:400,vy:0,jumping:false};
-  spikes=[];
-  running=true;
-  timer=0;
-}
-
-function restart(){
+  if(id){
+    document.getElementById(id).style.display = "flex";
+  }
+} function runction restart(){
   canvas.style.display="none";
-  jumpBtn.style.display="none";
-  startBtn.style.display="none";
-  go("main");
+  jumpBtn.style.display="startBtn startBtn.style.display="nonemain go("main");
 }
 
 function jump(){
