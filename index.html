@@ -2,74 +2,76 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SXJ Runner</title>
+<title>Runner Game</title>
 
 <style>
-body { margin:0; background:black; color:white; font-family:Arial; overflow:hidden; }
+body {
+  margin: 0;
+  background: black;
+  font-family: Arial;
+  overflow: hidden;
+  color: white;
+}
 
+/* SCREEN SYSTEM */
 .screen {
-  position:fixed;
-  width:100%; height:100%;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  gap:20px;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
 }
 
 button {
-  padding:14px 22px;
-  font-size:18px;
-  border:none;
-  border-radius:10px;
+  padding: 14px 22px;
+  font-size: 18px;
+  border: none;
+  border-radius: 10px;
 }
 
-/* canvas */
+/* CANVAS */
 canvas {
-  display:none;
-  margin:60px auto;
-  border:2px solid white;
+  display: none;
+  margin: 60px auto;
+  border: 2px solid white;
 }
 
-/* jump */
+/* GAME BUTTONS */
 #jumpBtn {
-  position:fixed;
-  bottom:30px;
-  left:20px;
-  display:none;
+  position: fixed;
+  bottom: 25px;
+  left: 20px;
+  display: none;
 }
 
-/* start */
+/* START BUTTON */
 #startBtn {
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  display:none;
-}
-
-/* colors */
-.colorBtn {
-  width:120px;
-  font-weight:bold;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  display: none;
 }
 </style>
 </head>
 
 <body>
 
-<!-- MAIN -->
+<!-- MAIN MENU -->
 <div id="main" class="screen" style="display:flex;">
   <button onclick="startGame()">PLAY</button>
-  <button onclick="showScreen('settings')">SETTINGS</button>
+  <button onclick="show('settings')">SETTINGS</button>
 </div>
 
 <!-- SETTINGS -->
 <div id="settings" class="screen">
-  <button onclick="showScreen('player')">Change Player</button>
-  <button onclick="showScreen('color')">Change Color</button>
-  <button onclick="showScreen('text')">Change Text</button>
-  <button onclick="showScreen('main')">BACK</button>
+  <button onclick="show('player')">Change Player</button>
+  <button onclick="show('color')">Change Color</button>
+  <button onclick="show('text')">Change Text</button>
+  <button onclick="show('main')">BACK</button>
 </div>
 
 <!-- PLAYER -->
@@ -78,37 +80,36 @@ canvas {
   <button onclick="setShape('circle')">CIRCLE</button>
   <button onclick="setShape('triangle')">TRIANGLE</button>
   <button onclick="setShape('heart')">HEART</button>
-  <button onclick="showScreen('settings')">BACK</button>
+  <button onclick="show('settings')">BACK</button>
 </div>
 
 <!-- COLOR -->
 <div id="color" class="screen">
-  <button class="colorBtn" style="background:red" onclick="setColor('red')">RED</button>
-  <button class="colorBtn" style="background:blue" onclick="setColor('blue')">BLUE</button>
-  <button class="colorBtn" style="background:green" onclick="setColor('green')">GREEN</button>
-  <button class="colorBtn" style="background:yellow" onclick="setColor('yellow')">YELLOW</button>
-  <button class="colorBtn" style="background:white" onclick="setColor('white')">WHITE</button>
-  <button onclick="showScreen('settings')">BACK</button>
+  <button style="background:red" onclick="setColor('red')">RED</button>
+  <button style="background:blue" onclick="setColor('blue')">BLUE</button>
+  <button style="background:green" onclick="setColor('green')">GREEN</button>
+  <button style="background:yellow" onclick="setColor('yellow')">YELLOW</button>
+  <button style="background:white" onclick="setColor('white')">WHITE</button>
+  <button onclick="show('settings')">BACK</button>
 </div>
 
 <!-- TEXT -->
 <div id="text" class="screen">
   <input id="textInput" placeholder="Enter text">
   <button onclick="saveText()">SAVE</button>
-  <button onclick="showScreen('settings')">BACK</button>
+  <button onclick="show('settings')">BACK</button>
 </div>
 
 <!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 <button id="jumpBtn" onclick="jump()">JUMP</button>
-<button id="startBtn" onclick="backToMenu()">START</button>
+<button id="startBtn" onclick="restart()">START</button>
 
 <script>
-/* SCREEN CONTROL */
-const screens = ["main","settings","player","color","text"];
 
-function showScreen(id){
-  screens.forEach(s=>{
+/* SCREEN CONTROL */
+function show(id){
+  ["main","settings","player","color","text"].forEach(s=>{
     document.getElementById(s).style.display="none";
   });
   document.getElementById(id).style.display="flex";
@@ -116,136 +117,141 @@ function showScreen(id){
 
 /* SETTINGS */
 let settings = {
-  shape:"square",
-  color:"red",
-  text:"SXJ"
+  shape: "square",
+  color: "red",
+  text: "SXJ"
 };
 
-function setShape(s){ settings.shape=s; }
-function setColor(c){ settings.color=c; }
+function setShape(s){ settings.shape = s; }
+function setColor(c){ settings.color = c; }
 
 function saveText(){
-  let val=document.getElementById("textInput").value;
-  if(val) settings.text=val.toUpperCase();
+  let v = document.getElementById("textInput").value;
+  if(v) settings.text = v.toUpperCase();
 }
 
-/* GAME */
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+/* GAME VARIABLES */
+let canvas, ctx;
+let player, spikes = [], running = false, timer = 0;
 
-let player, spikes=[], running=false, timer=0;
-
+/* START GAME */
 function startGame(){
-  // hide all screens
-  screens.forEach(s=>{
-    document.getElementById(s).style.display="none";
-  });
+  show(""); // hide all screens safely
 
-  canvas.style.display="block";
-  jumpBtn.style.display="block";
-  startBtn.style.display="none";
+  canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
 
-  player={x:50,y:400,vy:0,jumping:false};
-  spikes=[];
-  running=true;
-  timer=0;
+  canvas.style.display = "block";
+  document.getElementById("jumpBtn").style.display = "block";
+  document.getElementById("startBtn").style.display = "none";
+
+  player = {x:50,y:400,vy:0,jumping:false};
+  spikes = [];
+  running = true;
+  timer = 0;
 }
 
-function backToMenu(){
-  canvas.style.display="none";
-  jumpBtn.style.display="none";
-  startBtn.style.display="none";
-  showScreen("main");
+/* RESTART / BACK */
+function restart(){
+  canvas.style.display = "none";
+  document.getElementById("jumpBtn").style.display = "none";
+  document.getElementById("startBtn").style.display = "none";
+  show("main");
 }
 
+/* JUMP */
 function jump(){
   if(!player.jumping){
-    player.vy=-12;
-    player.jumping=true;
+    player.vy = -12;
+    player.jumping = true;
   }
 }
 
 /* DRAW PLAYER */
 function drawPlayer(){
-  ctx.fillStyle=settings.color;
+  ctx.fillStyle = settings.color;
 
-  if(settings.shape==="square"){
-    ctx.fillRect(player.x,player.y,30,30);
-  }
+  if(settings.shape === "square")
+    ctx.fillRect(player.x, player.y, 30, 30);
 
-  if(settings.shape==="circle"){
+  if(settings.shape === "circle"){
     ctx.beginPath();
-    ctx.arc(player.x+15,player.y+15,15,0,Math.PI*2);
+    ctx.arc(player.x+15, player.y+15, 15, 0, Math.PI*2);
     ctx.fill();
   }
 
-  if(settings.shape==="triangle"){
+  if(settings.shape === "triangle"){
     ctx.beginPath();
-    ctx.moveTo(player.x,player.y+30);
-    ctx.lineTo(player.x+15,player.y);
-    ctx.lineTo(player.x+30,player.y+30);
+    ctx.moveTo(player.x, player.y+30);
+    ctx.lineTo(player.x+15, player.y);
+    ctx.lineTo(player.x+30, player.y+30);
     ctx.fill();
   }
 
-  if(settings.shape==="heart"){
+  if(settings.shape === "heart"){
     ctx.beginPath();
-    ctx.moveTo(player.x+15,player.y+30);
+    ctx.moveTo(player.x+15, player.y+30);
     ctx.bezierCurveTo(player.x-10,player.y,player.x+40,player.y,player.x+15,player.y+30);
     ctx.fill();
   }
 
-  ctx.fillStyle="white";
-  ctx.fillText(settings.text,player.x,player.y-5);
+  ctx.fillStyle = "white";
+  ctx.fillText(settings.text, player.x, player.y - 5);
 }
 
-/* LOOP */
+/* GAME LOOP */
 function loop(){
+  if(!ctx) return;
+
   ctx.clearRect(0,0,400,500);
 
   if(running){
-    player.vy+=0.6;
-    player.y+=player.vy;
 
-    if(player.y>400){
-      player.y=400;
-      player.vy=0;
-      player.jumping=false;
+    player.vy += 0.6;
+    player.y += player.vy;
+
+    if(player.y > 400){
+      player.y = 400;
+      player.vy = 0;
+      player.jumping = false;
     }
 
     timer++;
-    if(timer>140){
+    if(timer > 140){
       spikes.push({x:400});
-      timer=0;
+      timer = 0;
     }
 
     for(let s of spikes){
-      s.x-=3;
+      s.x -= 3;
 
-      ctx.fillStyle="red";
+      ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.moveTo(s.x,430);
       ctx.lineTo(s.x+15,400);
       ctx.lineTo(s.x+30,430);
       ctx.fill();
 
-      if(s.x<player.x+30 && s.x+30>player.x && player.y>370){
-        running=false;
-        startBtn.style.display="block";
+      if(s.x < player.x+30 && s.x+30 > player.x && player.y > 370){
+        running = false;
+        document.getElementById("startBtn").style.display = "block";
       }
     }
 
-    spikes=spikes.filter(s=>s.x>-50);
+    spikes = spikes.filter(s => s.x > -50);
 
     drawPlayer();
 
   } else {
-    ctx.fillText("GAME OVER",130,250);
+    ctx.fillStyle = "white";
+    ctx.fillText("GAME OVER",150,250);
   }
 
   requestAnimationFrame(loop);
 }
 
 loop();
+
 </script>
 
 </body>
