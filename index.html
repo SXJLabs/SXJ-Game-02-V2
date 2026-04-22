@@ -2,48 +2,46 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Runner</title>
+<title>Space Runner FIX</title>
 
 <style>
 body {
   margin: 0;
   overflow: hidden;
   background: black;
-  font-family: Arial;
 }
 
-/* CANVAS */
+/* CANVAS ALWAYS VISIBLE */
 canvas {
-  display: none;
+  display: block;
   background: black;
 }
 
-/* BUTTONS INSIDE SCREEN (FIXED) */
-#jumpBtn, #shieldBtn {
+/* BUTTONS INSIDE SCREEN */
+#jumpBtn, #shieldBtn, #startBtn {
   position: fixed;
-  bottom: 25px;
-  padding: 15px 20px;
-  border: none;
-  border-radius: 12px;
   z-index: 10;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
 }
 
 #jumpBtn {
+  bottom: 20px;
   left: 20px;
 }
 
 #shieldBtn {
+  bottom: 20px;
   right: 20px;
 }
 
-/* START */
 #startBtn {
-  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
   display: none;
-  z-index: 10;
 }
 </style>
 </head>
@@ -52,178 +50,181 @@ canvas {
 
 <canvas id="game" width="400" height="500"></canvas>
 
-<button id="jumpBtn" onclick="jump()">JUMP</button>
-<button id="shieldBtn" onclick="shield()">SHIELD</button>
-<button id="startBtn" onclick="restart()">START</button>
+<button id="jumpBtn">JUMP</button>
+<button id="shieldBtn">SHIELD</button>
+<button id="startBtn">START</button>
 
 <script>
+window.onload = function () {
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+const jumpBtn = document.getElementById("jumpBtn");
+const shieldBtn = document.getElementById("shieldBtn");
+const startBtn = document.getElementById("startBtn");
+
 let player, objects = [], bullets = [];
 let stars = [];
-let running = false;
+let running = true;
 let timer = 0;
-let patternIndex = 0;
-let shieldActive = false;
+let pattern = 0;
+let shield = false;
 
-/* STAR BACKGROUND */
+/* SAFE STAR BACKGROUND */
 for(let i=0;i<80;i++){
   stars.push({
-    x:Math.random()*400,
-    y:Math.random()*500,
-    s:Math.random()*2
+    x: Math.random()*400,
+    y: Math.random()*500,
+    s: Math.random()*2
   });
 }
 
-/* SHOW GAME */
-function startGame(){
-  canvas.style.display = "block";
-  document.getElementById("jumpBtn").style.display = "block";
-  document.getElementById("shieldBtn").style.display = "block";
-
+/* INIT GAME */
+function init(){
   player = {x:50,y:400,vy:0,jumping:false};
-
   objects = [];
   bullets = [];
   timer = 0;
-  patternIndex = 0;
+  pattern = 0;
   running = true;
-}
-
-/* RESTART */
-function restart(){
-  location.reload();
+  startBtn.style.display = "none";
 }
 
 /* CONTROLS */
-function jump(){
+jumpBtn.onclick = function(){
   if(!player.jumping){
     player.vy = -12;
     player.jumping = true;
   }
-}
+};
 
-function shield(){
-  shieldActive = true;
-  setTimeout(()=>shieldActive=false, 1200);
-}
+shieldBtn.onclick = function(){
+  shield = true;
+  setTimeout(()=>shield=false, 1200);
+};
 
-/* PATTERN SYSTEM */
-function spawnPattern(){
+startBtn.onclick = function(){
+  init();
+};
 
-  let type = patternIndex % 4;
+/* PATTERN */
+function spawn(){
+  let type = pattern % 4;
 
   if(type === 0){
-    objects.push({type:"spike",x:400});
+    objects.push({t:"spike",x:400});
   }
-  else if(type === 1){
-    objects.push({type:"enemy",x:400,shoot:0});
+  if(type === 1){
+    objects.push({t:"enemy",x:400,cd:0});
   }
-  else if(type === 2){
-    objects.push({type:"enemy",x:400,shoot:0});
+  if(type === 2){
+    objects.push({t:"enemy",x:400,cd:0});
   }
-  else {
-    objects.push({type:"spike",x:400});
-    objects.push({type:"spike",x:450});
+  if(type === 3){
+    objects.push({t:"spike",x:400});
+    objects.push({t:"spike",x:460});
   }
 
-  patternIndex++;
+  pattern++;
 }
 
 /* LOOP */
 function loop(){
 
-  ctx.clearRect(0,0,400,500);
+ctx.clearRect(0,0,400,500);
 
-  /* STAR BACKGROUND */
-  ctx.fillStyle="white";
-  for(let s of stars){
-    ctx.fillRect(s.x,s.y,s.s,s.s);
-    s.x -= 0.5;
-    if(s.x < 0) s.x = 400;
-  }
-
-  if(running){
-
-    /* PLAYER */
-    player.vy += 0.6;
-    player.y += player.vy;
-
-    if(player.y > 400){
-      player.y = 400;
-      player.vy = 0;
-      player.jumping = false;
-    }
-
-    /* SPAWN CONTROL (BREATHING SPACE) */
-    timer++;
-    if(timer > 160){
-      spawnPattern();
-      timer = 0;
-    }
-
-    /* OBJECTS */
-    for(let o of objects){
-      o.x -= 2.5;
-
-      if(o.type === "spike"){
-        ctx.fillStyle="red";
-        ctx.beginPath();
-        ctx.moveTo(o.x,430);
-        ctx.lineTo(o.x+15,400);
-        ctx.lineTo(o.x+30,430);
-        ctx.fill();
-
-        if(o.x < player.x+30 && player.y > 370){
-          if(!shieldActive) running = false;
-        }
-      }
-
-      if(o.type === "enemy"){
-        ctx.fillStyle="orange";
-        ctx.fillRect(o.x,380,30,30);
-
-        o.shoot++;
-
-        if(o.shoot > 80){
-          bullets.push({x:o.x,y:400});
-          o.shoot = 0;
-        }
-      }
-    }
-
-    /* BULLETS */
-    for(let b of bullets){
-      b.x -= 4;
-
-      ctx.fillStyle="yellow";
-      ctx.fillRect(b.x,b.y,5,5);
-
-      if(b.x < player.x+30 && b.x > player.x && player.y > 370){
-        if(!shieldActive) running = false;
-      }
-    }
-
-    objects = objects.filter(o=>o.x>-100);
-    bullets = bullets.filter(b=>b.x>-50);
-
-    /* PLAYER */
-    ctx.fillStyle = shieldActive ? "cyan" : "white";
-    ctx.fillRect(player.x,player.y,30,30);
-
-  } else {
-    ctx.fillStyle="white";
-    ctx.fillText("GAME OVER",150,250);
-    document.getElementById("startBtn").style.display = "block";
-  }
-
-  requestAnimationFrame(loop);
+/* STARS */
+ctx.fillStyle="white";
+for(let s of stars){
+  ctx.fillRect(s.x,s.y,s.s,s.s);
+  s.x -= 0.5;
+  if(s.x < 0) s.x = 400;
 }
 
+if(running){
+
+  /* PLAYER */
+  player.vy += 0.6;
+  player.y += player.vy;
+
+  if(player.y > 400){
+    player.y = 400;
+    player.vy = 0;
+    player.jumping = false;
+  }
+
+  /* SPAWN */
+  timer++;
+  if(timer > 140){
+    spawn();
+    timer = 0;
+  }
+
+  /* OBJECTS */
+  for(let o of objects){
+    o.x -= 2.5;
+
+    if(o.t === "spike"){
+      ctx.fillStyle="red";
+      ctx.beginPath();
+      ctx.moveTo(o.x,430);
+      ctx.lineTo(o.x+15,400);
+      ctx.lineTo(o.x+30,430);
+      ctx.fill();
+
+      if(o.x < player.x+30 && player.y > 370 && !shield){
+        running = false;
+        startBtn.style.display = "block";
+      }
+    }
+
+    if(o.t === "enemy"){
+      ctx.fillStyle="orange";
+      ctx.fillRect(o.x,380,30,30);
+
+      o.cd++;
+
+      if(o.cd > 90){
+        bullets.push({x:o.x,y:400});
+        o.cd = 0;
+      }
+    }
+  }
+
+  /* BULLETS */
+  for(let b of bullets){
+    b.x -= 4;
+
+    ctx.fillStyle="yellow";
+    ctx.fillRect(b.x,b.y,5,5);
+
+    if(b.x < player.x+30 && player.y > 370 && !shield){
+      running = false;
+      startBtn.style.display = "block";
+    }
+  }
+
+  objects = objects.filter(o=>o.x>-100);
+  bullets = bullets.filter(b=>b.x>-50);
+
+  /* PLAYER */
+  ctx.fillStyle = shield ? "cyan" : "white";
+  ctx.fillRect(player.x,player.y,30,30);
+
+} else {
+  ctx.fillStyle="white";
+  ctx.fillText("GAME OVER",150,250);
+}
+
+requestAnimationFrame(loop);
+}
+
+/* START GAME */
+init();
 loop();
 
+}; // window.onload end
 </script>
 
 </body>
