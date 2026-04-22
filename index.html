@@ -2,47 +2,31 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Runner FIX</title>
+<title>SAFE GAME</title>
 
 <style>
 body {
   margin: 0;
-  overflow: hidden;
   background: black;
+  overflow: hidden;
 }
 
-/* CANVAS ALWAYS VISIBLE */
 canvas {
   display: block;
   background: black;
 }
 
-/* BUTTONS INSIDE SCREEN */
-#jumpBtn, #shieldBtn, #startBtn {
+button {
   position: fixed;
   z-index: 10;
-  padding: 15px;
-  border: none;
+  padding: 14px;
   border-radius: 10px;
-  font-size: 16px;
+  border: none;
 }
 
-#jumpBtn {
-  bottom: 20px;
-  left: 20px;
-}
-
-#shieldBtn {
-  bottom: 20px;
-  right: 20px;
-}
-
-#startBtn {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  display: none;
-}
+#jumpBtn { left: 20px; bottom: 20px; }
+#shieldBtn { right: 20px; bottom: 20px; }
+#startBtn { top: 50%; left: 50%; transform: translate(-50%,-50%); display:none; }
 </style>
 </head>
 
@@ -55,32 +39,21 @@ canvas {
 <button id="startBtn">START</button>
 
 <script>
-window.onload = function () {
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const jumpBtn = document.getElementById("jumpBtn");
-const shieldBtn = document.getElementById("shieldBtn");
-const startBtn = document.getElementById("startBtn");
-
-let player, objects = [], bullets = [];
-let stars = [];
-let running = true;
-let timer = 0;
-let pattern = 0;
-let shield = false;
-
-/* SAFE STAR BACKGROUND */
-for(let i=0;i<80;i++){
-  stars.push({
-    x: Math.random()*400,
-    y: Math.random()*500,
-    s: Math.random()*2
-  });
+if(!ctx){
+  alert("Canvas failed to load");
 }
 
-/* INIT GAME */
+let player, objects = [], bullets = [];
+let running = false;
+let shield = false;
+let timer = 0;
+let pattern = 0;
+
+/* INIT */
 function init(){
   player = {x:50,y:400,vy:0,jumping:false};
   objects = [];
@@ -88,40 +61,32 @@ function init(){
   timer = 0;
   pattern = 0;
   running = true;
-  startBtn.style.display = "none";
+  document.getElementById("startBtn").style.display="none";
 }
 
 /* CONTROLS */
-jumpBtn.onclick = function(){
+document.getElementById("jumpBtn").onclick = function(){
   if(!player.jumping){
     player.vy = -12;
     player.jumping = true;
   }
 };
 
-shieldBtn.onclick = function(){
+document.getElementById("shieldBtn").onclick = function(){
   shield = true;
   setTimeout(()=>shield=false, 1200);
 };
 
-startBtn.onclick = function(){
-  init();
-};
+document.getElementById("startBtn").onclick = init;
 
-/* PATTERN */
+/* SPAWN */
 function spawn(){
-  let type = pattern % 4;
+  let t = pattern % 4;
 
-  if(type === 0){
-    objects.push({t:"spike",x:400});
-  }
-  if(type === 1){
-    objects.push({t:"enemy",x:400,cd:0});
-  }
-  if(type === 2){
-    objects.push({t:"enemy",x:400,cd:0});
-  }
-  if(type === 3){
+  if(t === 0) objects.push({t:"spike",x:400});
+  if(t === 1) objects.push({t:"enemy",x:400,cd:0});
+  if(t === 2) objects.push({t:"enemy",x:400,cd:0});
+  if(t === 3){
     objects.push({t:"spike",x:400});
     objects.push({t:"spike",x:460});
   }
@@ -129,102 +94,97 @@ function spawn(){
   pattern++;
 }
 
-/* LOOP */
+/* LOOP (SAFE GUARDED) */
 function loop(){
+  try {
 
-ctx.clearRect(0,0,400,500);
+    ctx.clearRect(0,0,400,500);
 
-/* STARS */
-ctx.fillStyle="white";
-for(let s of stars){
-  ctx.fillRect(s.x,s.y,s.s,s.s);
-  s.x -= 0.5;
-  if(s.x < 0) s.x = 400;
-}
+    if(!player){
+      requestAnimationFrame(loop);
+      return;
+    }
 
-if(running){
+    if(running){
 
-  /* PLAYER */
-  player.vy += 0.6;
-  player.y += player.vy;
+      player.vy += 0.6;
+      player.y += player.vy;
 
-  if(player.y > 400){
-    player.y = 400;
-    player.vy = 0;
-    player.jumping = false;
-  }
-
-  /* SPAWN */
-  timer++;
-  if(timer > 140){
-    spawn();
-    timer = 0;
-  }
-
-  /* OBJECTS */
-  for(let o of objects){
-    o.x -= 2.5;
-
-    if(o.t === "spike"){
-      ctx.fillStyle="red";
-      ctx.beginPath();
-      ctx.moveTo(o.x,430);
-      ctx.lineTo(o.x+15,400);
-      ctx.lineTo(o.x+30,430);
-      ctx.fill();
-
-      if(o.x < player.x+30 && player.y > 370 && !shield){
-        running = false;
-        startBtn.style.display = "block";
+      if(player.y > 400){
+        player.y = 400;
+        player.vy = 0;
+        player.jumping = false;
       }
-    }
 
-    if(o.t === "enemy"){
-      ctx.fillStyle="orange";
-      ctx.fillRect(o.x,380,30,30);
-
-      o.cd++;
-
-      if(o.cd > 90){
-        bullets.push({x:o.x,y:400});
-        o.cd = 0;
+      timer++;
+      if(timer > 140){
+        spawn();
+        timer = 0;
       }
+
+      for(let o of objects){
+        o.x -= 2.5;
+
+        if(o.t === "spike"){
+          ctx.fillStyle="red";
+          ctx.beginPath();
+          ctx.moveTo(o.x,430);
+          ctx.lineTo(o.x+15,400);
+          ctx.lineTo(o.x+30,430);
+          ctx.fill();
+
+          if(o.x < player.x+30 && player.y > 370 && !shield){
+            running = false;
+            document.getElementById("startBtn").style.display="block";
+          }
+        }
+
+        if(o.t === "enemy"){
+          ctx.fillStyle="orange";
+          ctx.fillRect(o.x,380,30,30);
+
+          o.cd++;
+
+          if(o.cd > 90){
+            bullets.push({x:o.x,y:400});
+            o.cd = 0;
+          }
+        }
+      }
+
+      for(let b of bullets){
+        b.x -= 4;
+        ctx.fillStyle="yellow";
+        ctx.fillRect(b.x,b.y,5,5);
+
+        if(b.x < player.x+30 && player.y > 370 && !shield){
+          running = false;
+          document.getElementById("startBtn").style.display="block";
+        }
+      }
+
+      objects = objects.filter(o=>o.x>-100);
+      bullets = bullets.filter(b=>b.x>-50);
+
+      ctx.fillStyle = shield ? "cyan" : "white";
+      ctx.fillRect(player.x,player.y,30,30);
+
+    } else {
+      ctx.fillStyle="white";
+      ctx.fillText("GAME OVER",150,250);
     }
+
+  } catch(e){
+    ctx.fillStyle="white";
+    ctx.fillText("ERROR: " + e.message, 10, 50);
   }
 
-  /* BULLETS */
-  for(let b of bullets){
-    b.x -= 4;
-
-    ctx.fillStyle="yellow";
-    ctx.fillRect(b.x,b.y,5,5);
-
-    if(b.x < player.x+30 && player.y > 370 && !shield){
-      running = false;
-      startBtn.style.display = "block";
-    }
-  }
-
-  objects = objects.filter(o=>o.x>-100);
-  bullets = bullets.filter(b=>b.x>-50);
-
-  /* PLAYER */
-  ctx.fillStyle = shield ? "cyan" : "white";
-  ctx.fillRect(player.x,player.y,30,30);
-
-} else {
-  ctx.fillStyle="white";
-  ctx.fillText("GAME OVER",150,250);
+  requestAnimationFrame(loop);
 }
 
-requestAnimationFrame(loop);
-}
-
-/* START GAME */
 init();
 loop();
 
-}; // window.onload end
 </script>
 
 </body>
