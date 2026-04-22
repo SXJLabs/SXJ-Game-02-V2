@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SXJ Runner</title>
+
+<style>
+body {
+  margin: 0;
+  background: black;
+  font-family: Arial;
+  overflow: hidden;
+}
+
+/* TOP BAR */
+#topbar {
+  display: none;
+  justify-content: space-between;
+  padding: 10px;
+  background: #111;
+  color: white;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+}
+
+/* CANVAS */
+canvas {
+  display: none;
+  margin: 60px auto 0;
+  border: 2px solid white;
+  width: 100vw;
+  max-width: 400px;
+}
+
+/* MENU */
+.menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+button {
+  padding: 15px 25px;
+  font-size: 18px;
+  border-radius: 10px;
+  border: none;
+}
+
+/* GAME BUTTONS */
+#jumpBtn, #shieldBtn {
+  display: none;
+  position: fixed;
+  bottom: calc(25px + env(safe-area-inset-bottom));
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(50,50,50,0.9);
+  color: white;
+}
+
+#jumpBtn { left: 20px; }
+#shieldBtn { right: 20px; }
+
+/* SETTINGS */
+.settings {
+  display: none;
+  color: white;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- MAIN MENU -->
+<div id="mainMenu" class="menu">
+  <button onclick="startGame()">PLAY</button>
+  <button onclick="openSettings()">SETTINGS</button>
+</div>
+
+<!-- SETTINGS MENU -->
+<div id="settingsMenu" class="menu settings">
+  
+  <div>
+    <p>Change Shape</p>
+    <button onclick="setShape('square')">Square</button>
+    <button onclick="setShape('circle')">Circle</button>
+    <button onclick="setShape('triangle')">Triangle</button>
+    <button onclick="setShape('heart')">Heart</button>
+  </div>
+
+  <div>
+    <p>Change Color</p>
+    <button onclick="setColor('white')">White</button>
+    <button onclick="setColor('red')">Red</button>
+    <button onclick="setColor('green')">Green</button>
+    <button onclick="setColor('yellow')">Yellow</button>
+    <button onclick="setColor('cyan')">Cyan</button>
+  </div>
+
+  <div>
+    <p>Change Text</p>
+    <input id="nameInput" placeholder="Enter name">
+  </div>
+
+  <button onclick="saveSettings()">SAVE</button>
+  <button onclick="backToMenu()">BACK</button>
+
+</div>
+
+<!-- GAME UI -->
+<div id="topbar">
+  <div>SXJ RUNNER</div>
+  <div>Score: <span id="score">0</span></div>
+</div>
+
+<canvas id="game" width="400" height="500"></canvas>
+
+<button id="jumpBtn" onclick="jump()">JUMP</button>
+<button id="shieldBtn" onclick="toggleShield()">SHIELD</button>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+/* SETTINGS DATA */
+let playerSettings = {
+  shape: "square",
+  color: "red",
+  text: "SXJ"
+};
+
+/* MENU CONTROL */
+function openSettings() {
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("settingsMenu").style.display = "flex";
+}
+
+function backToMenu() {
+  document.getElementById("settingsMenu").style.display = "none";
+  document.getElementById("mainMenu").style.display = "flex";
+}
+
+function setShape(s) { playerSettings.shape = s; }
+function setColor(c) { playerSettings.color = c; }
+
+function saveSettings() {
+  let txt = document.getElementById("nameInput").value;
+  if (txt) playerSettings.text = txt.toUpperCase();
+  backToMenu();
+}
+
+/* GAME VARIABLES */
+let player, spikes=[], score=0, running=false;
+
+/* START GAME */
+function startGame() {
+  document.getElementById("mainMenu").style.display = "none";
+  document.getElementById("topbar").style.display = "flex";
+  canvas.style.display = "block";
+  document.getElementById("jumpBtn").style.display = "block";
+  document.getElementById("shieldBtn").style.display = "block";
+
+  player = { x:50, y:400, vy:0, jumping:false };
+  spikes = [];
+  score = 0;
+  running = true;
+}
+
+/* CONTROLS */
+function jump() {
+  if (!player.jumping) {
+    player.vy = -12;
+    player.jumping = true;
+  }
+}
+
+function toggleShield() {} // keep simple for now
+
+/* DRAW PLAYER */
+function drawPlayer() {
+  ctx.fillStyle = playerSettings.color;
+
+  if (playerSettings.shape === "square") {
+    ctx.fillRect(player.x, player.y, 30, 30);
+  }
+
+  if (playerSettings.shape === "circle") {
+    ctx.beginPath();
+    ctx.arc(player.x+15, player.y+15, 15, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  if (playerSettings.shape === "triangle") {
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y+30);
+    ctx.lineTo(player.x+15, player.y);
+    ctx.lineTo(player.x+30, player.y+30);
+    ctx.fill();
+  }
+
+  if (playerSettings.shape === "heart") {
+    ctx.beginPath();
+    ctx.moveTo(player.x+15, player.y+30);
+    ctx.bezierCurveTo(player.x-10, player.y, player.x+40, player.y, player.x+15, player.y+30);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "white";
+  ctx.font = "12px Arial";
+  ctx.fillText(playerSettings.text, player.x, player.y-5);
+}
+
+/* GAME LOOP */
+function loop() {
+  ctx.clearRect(0,0,400,500);
+
+  if (running) {
+
+    player.vy += 0.6;
+    player.y += player.vy;
+
+    if (player.y > 400) {
+      player.y = 400;
+      player.vy = 0;
+      player.jumping = false;
+    }
+
+    if (Math.random() < 0.02) {
+      spikes.push({x:400});
+    }
+
+    for (let s of spikes) {
+      s.x -= 3;
+
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(s.x,430);
+      ctx.lineTo(s.x+15,400);
+      ctx.lineTo(s.x+30,430);
+      ctx.fill();
+
+      if (s.x < player.x+30 && s.x+30 > player.x && player.y > 370) {
+        running = false;
+      }
+    }
+
+    spikes = spikes.filter(s=>s.x>-50);
+
+    drawPlayer();
+
+    score++;
+    document.getElementById("score").innerText = score;
+
+  } else {
+    ctx.fillStyle = "white";
+    ctx.fillText("GAME OVER",130,250);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
