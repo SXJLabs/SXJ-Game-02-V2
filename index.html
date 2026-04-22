@@ -2,67 +2,41 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Runner Game</title>
+<title>Space Runner</title>
 
 <style>
 body {
   margin: 0;
+  overflow: hidden;
   background: black;
   font-family: Arial;
-  overflow: hidden;
-  color: white;
 }
 
-/* SCREENS */
-.screen {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-}
-
-/* BUTTONS */
-button {
-  padding: 14px 22px;
-  font-size: 18px;
-  border: none;
-  border-radius: 10px;
-  transition: 0.15s;
-}
-
-button:active {
-  transform: scale(0.9);
-  opacity: 0.7;
-}
-
-/* GAME CANVAS */
+/* CANVAS */
 canvas {
   display: none;
-  border: 2px solid white;
-  margin: 0 auto;
+  background: black;
 }
 
-/* CONTROLS */
-#jumpBtn {
+/* BUTTONS INSIDE SCREEN (FIXED) */
+#jumpBtn, #shieldBtn {
   position: fixed;
-  bottom: 20px;
-  left: 20px;
-  display: none;
+  bottom: 25px;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 12px;
   z-index: 10;
+}
+
+#jumpBtn {
+  left: 20px;
 }
 
 #shieldBtn {
-  position: fixed;
-  bottom: 20px;
   right: 20px;
-  display: none;
-  z-index: 10;
 }
 
+/* START */
 #startBtn {
   position: fixed;
   top: 50%;
@@ -76,48 +50,6 @@ canvas {
 
 <body>
 
-<!-- MAIN MENU -->
-<div id="main" class="screen" style="display:flex;">
-  <button onclick="startGame()">PLAY</button>
-  <button onclick="show('settings')">SETTINGS</button>
-</div>
-
-<!-- SETTINGS -->
-<div id="settings" class="screen">
-  <button onclick="show('player')">Change Player</button>
-  <button onclick="show('color')">Change Color</button>
-  <button onclick="show('text')">Change Text</button>
-  <button onclick="show('main')">BACK</button>
-</div>
-
-<!-- PLAYER -->
-<div id="player" class="screen">
-  <button onclick="setShape('square')">SQUARE</button>
-  <button onclick="setShape('circle')">CIRCLE</button>
-  <button onclick="setShape('triangle')">TRIANGLE</button>
-  <button onclick="setShape('heart')">HEART</button>
-  <button onclick="show('settings')">BACK</button>
-</div>
-
-<!-- COLOR -->
-<div id="color" class="screen">
-  <button style="background:red" onclick="setColor('red')">RED</button>
-  <button style="background:blue" onclick="setColor('blue')">BLUE</button>
-  <button style="background:green" onclick="setColor('green')">GREEN</button>
-  <button style="background:yellow;color:black" onclick="setColor('yellow')">YELLOW</button>
-  <button style="background:white;color:black" onclick="setColor('white')">WHITE</button>
-  <button onclick="show('settings')">BACK</button>
-</div>
-
-<!-- TEXT -->
-<div id="text" class="screen">
-  <input id="textInput" placeholder="Enter text">
-  <button onclick="saveText()">SAVE</button>
-  <button onclick="show('settings')">BACK</button>
-  <p id="msg"></p>
-</div>
-
-<!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
@@ -126,70 +58,43 @@ canvas {
 
 <script>
 
-/* SCREEN CONTROL (SAFE) */
-function show(id){
-  const screens = ["main","settings","player","color","text"];
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-  screens.forEach(s=>{
-    document.getElementById(s).style.display = "none";
-  });
-
-  if(id){
-    document.getElementById(id).style.display = "flex";
-  }
-}
-
-/* SETTINGS */
-let settings = {
-  shape:"square",
-  color:"red",
-  text:"SXJ"
-};
-
-function setShape(s){ settings.shape=s; }
-function setColor(c){ settings.color=c; }
-
-function saveText(){
-  let v = document.getElementById("textInput").value;
-  if(v.trim() !== ""){
-    settings.text = v.toUpperCase();
-    document.getElementById("msg").innerText = "SAVED ✔";
-    setTimeout(()=>document.getElementById("msg").innerText="",1000);
-  }
-}
-
-/* GAME STATE */
-let canvas, ctx;
-let player, spikes = [];
+let player, objects = [], bullets = [];
+let stars = [];
 let running = false;
 let timer = 0;
+let patternIndex = 0;
 let shieldActive = false;
 
-/* START GAME */
+/* STAR BACKGROUND */
+for(let i=0;i<80;i++){
+  stars.push({
+    x:Math.random()*400,
+    y:Math.random()*500,
+    s:Math.random()*2
+  });
+}
+
+/* SHOW GAME */
 function startGame(){
-  show("");
-
-  canvas = document.getElementById("game");
-  ctx = canvas.getContext("2d");
-
   canvas.style.display = "block";
   document.getElementById("jumpBtn").style.display = "block";
   document.getElementById("shieldBtn").style.display = "block";
-  document.getElementById("startBtn").style.display = "none";
 
   player = {x:50,y:400,vy:0,jumping:false};
-  spikes = [];
+
+  objects = [];
+  bullets = [];
   timer = 0;
+  patternIndex = 0;
   running = true;
 }
 
 /* RESTART */
 function restart(){
-  canvas.style.display = "none";
-  document.getElementById("jumpBtn").style.display = "none";
-  document.getElementById("shieldBtn").style.display = "none";
-  document.getElementById("startBtn").style.display = "none";
-  show("main");
+  location.reload();
 }
 
 /* CONTROLS */
@@ -202,27 +107,47 @@ function jump(){
 
 function shield(){
   shieldActive = true;
-  setTimeout(()=>shieldActive=false, 1000);
+  setTimeout(()=>shieldActive=false, 1200);
 }
 
-/* DRAW PLAYER */
-function drawPlayer(){
-  ctx.fillStyle = shieldActive ? "cyan" : settings.color;
+/* PATTERN SYSTEM */
+function spawnPattern(){
 
-  ctx.fillRect(player.x, player.y, 30, 30);
+  let type = patternIndex % 4;
 
-  ctx.fillStyle = "white";
-  ctx.fillText(settings.text, player.x, player.y - 5);
+  if(type === 0){
+    objects.push({type:"spike",x:400});
+  }
+  else if(type === 1){
+    objects.push({type:"enemy",x:400,shoot:0});
+  }
+  else if(type === 2){
+    objects.push({type:"enemy",x:400,shoot:0});
+  }
+  else {
+    objects.push({type:"spike",x:400});
+    objects.push({type:"spike",x:450});
+  }
+
+  patternIndex++;
 }
 
-/* GAME LOOP */
+/* LOOP */
 function loop(){
-  if(!ctx) return;
 
   ctx.clearRect(0,0,400,500);
 
+  /* STAR BACKGROUND */
+  ctx.fillStyle="white";
+  for(let s of stars){
+    ctx.fillRect(s.x,s.y,s.s,s.s);
+    s.x -= 0.5;
+    if(s.x < 0) s.x = 400;
+  }
+
   if(running){
 
+    /* PLAYER */
     player.vy += 0.6;
     player.y += player.vy;
 
@@ -232,42 +157,66 @@ function loop(){
       player.jumping = false;
     }
 
-    // OBSTACLES (FIXED SPACING)
+    /* SPAWN CONTROL (BREATHING SPACE) */
     timer++;
-    if(timer > 130){
-      spikes.push({x:400});
+    if(timer > 160){
+      spawnPattern();
       timer = 0;
     }
 
-    for(let s of spikes){
-      s.x -= 3;
+    /* OBJECTS */
+    for(let o of objects){
+      o.x -= 2.5;
 
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.moveTo(s.x,430);
-      ctx.lineTo(s.x+15,400);
-      ctx.lineTo(s.x+30,430);
-      ctx.fill();
+      if(o.type === "spike"){
+        ctx.fillStyle="red";
+        ctx.beginPath();
+        ctx.moveTo(o.x,430);
+        ctx.lineTo(o.x+15,400);
+        ctx.lineTo(o.x+30,430);
+        ctx.fill();
 
-      if(
-        s.x < player.x+30 &&
-        s.x+30 > player.x &&
-        player.y > 370
-      ){
-        if(!shieldActive){
-          running = false;
-          document.getElementById("startBtn").style.display = "block";
+        if(o.x < player.x+30 && player.y > 370){
+          if(!shieldActive) running = false;
+        }
+      }
+
+      if(o.type === "enemy"){
+        ctx.fillStyle="orange";
+        ctx.fillRect(o.x,380,30,30);
+
+        o.shoot++;
+
+        if(o.shoot > 80){
+          bullets.push({x:o.x,y:400});
+          o.shoot = 0;
         }
       }
     }
 
-    spikes = spikes.filter(s => s.x > -50);
+    /* BULLETS */
+    for(let b of bullets){
+      b.x -= 4;
 
-    drawPlayer();
+      ctx.fillStyle="yellow";
+      ctx.fillRect(b.x,b.y,5,5);
+
+      if(b.x < player.x+30 && b.x > player.x && player.y > 370){
+        if(!shieldActive) running = false;
+      }
+    }
+
+    objects = objects.filter(o=>o.x>-100);
+    bullets = bullets.filter(b=>b.x>-50);
+
+    /* PLAYER */
+    ctx.fillStyle = shieldActive ? "cyan" : "white";
+    ctx.fillRect(player.x,player.y,30,30);
 
   } else {
-    ctx.fillStyle = "white";
+    ctx.fillStyle="white";
     ctx.fillText("GAME OVER",150,250);
+    document.getElementById("startBtn").style.display = "block";
   }
 
   requestAnimationFrame(loop);
