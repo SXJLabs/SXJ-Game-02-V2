@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Runner</title>
+<title>Runner Game</title>
 
 <style>
 body {
@@ -14,31 +14,31 @@ body {
 }
 
 canvas {
-  display: none;
+  display: block;
   background: black;
 }
 
-/* CONTROLS */
-#jumpBtn, #shieldBtn {
-  position: fixed;
-  z-index: 10;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: none;
-}
-
-#jumpBtn { bottom: 20px; left: 20px; display:none; }
-#shieldBtn { bottom: 20px; right: 20px; display:none; }
-
-/* SCORE TOP RIGHT */
-#scoreBox {
+/* SCORE */
+#score {
   position: fixed;
   top: 10px;
   right: 10px;
   font-size: 20px;
   z-index: 10;
-  display: none;
 }
+
+/* BUTTONS */
+#jumpBtn, #shieldBtn {
+  position: fixed;
+  bottom: 20px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: none;
+  z-index: 10;
+}
+
+#jumpBtn { left: 20px; }
+#shieldBtn { right: 20px; }
 
 /* RESTART TOP CENTER */
 #restartBtn {
@@ -46,19 +46,16 @@ canvas {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
-
-  display: none;
-  padding: 10px 18px;
+  padding: 10px 16px;
   background: white;
   color: black;
   border: none;
-  border-radius: 8px;
-  font-size: 16px;
+  display: none;
+  z-index: 20;
 }
 
-/* GAME OVER TEXT */
-#gameOverScreen {
+/* GAME OVER SCREEN */
+#gameOver {
   position: fixed;
   width: 100%;
   height: 100%;
@@ -67,7 +64,7 @@ canvas {
   align-items: center;
   flex-direction: column;
   background: rgba(0,0,0,0.6);
-  z-index: 15;
+  z-index: 30;
 }
 
 #gameOverText {
@@ -81,115 +78,67 @@ canvas {
 
 <canvas id="game" width="400" height="500"></canvas>
 
-<div id="scoreBox">Score: 0</div>
+<div id="score">Score: 0</div>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="shield()">SHIELD</button>
+<button id="restartBtn" onclick="startGame()">RESTART</button>
 
-<button id="restartBtn" onclick="restartGame()">RESTART</button>
-
-<div id="gameOverScreen">
+<div id="gameOver">
   <div id="gameOverText">GAME OVER</div>
 </div>
 
 <script>
 
-let canvas = document.getElementById("game");
-let ctx = canvas.getContext("2d");
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-let player, objects=[], bullets=[];
+let player, enemies=[];
 let running=false;
-let timer=0;
-let pattern=0;
-let shieldActive=false;
-
 let score=0;
-let scoreTimer=0;
+let scoreTick=0;
 
-/* AUDIO */
-let audioCtx;
-function beep(freq,time){
-  if(!audioCtx){
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
-
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  osc.frequency.value = freq;
-  osc.start();
-  osc.stop(audioCtx.currentTime + time/1000);
-}
-
-/* START */
+/* START GAME */
 function startGame(){
 
-  document.getElementById("gameOverScreen").style.display="none";
+  document.getElementById("gameOver").style.display="none";
   document.getElementById("restartBtn").style.display="none";
 
-  canvas.style.display="block";
-  document.getElementById("jumpBtn").style.display="block";
-  document.getElementById("shieldBtn").style.display="block";
-  document.getElementById("scoreBox").style.display="block";
+  player = {x:50,y:400,vy:0,prevY:400,jumping:false};
+  enemies = [];
 
-  player={x:50,y:400,vy:0,jumping:false,prevY:400};
+  score = 0;
+  scoreTick = 0;
 
-  objects=[];
-  bullets=[];
-  timer=0;
-  pattern=0;
-
-  score=0;
-  scoreTimer=0;
-
-  running=true;
-
-  beep(600,100);
-}
-
-/* RESTART */
-function restartGame(){
-  startGame();
+  running = true;
 }
 
 /* CONTROLS */
 function jump(){
   if(!player.jumping){
-    player.vy=-12;
-    player.jumping=true;
-    beep(800,80);
+    player.vy = -12;
+    player.jumping = true;
   }
 }
 
-function shield(){
-  shieldActive=true;
-  setTimeout(()=>shieldActive=false,1200);
-  beep(300,120);
-}
+function shield(){}
 
-/* SPAWN */
+/* SPAWN ENEMY */
+let spawnTimer=0;
 function spawn(){
-  let t=pattern%5;
-
-  if(t===0) objects.push({type:"spike",x:400});
-  if(t===3) objects.push({type:"enemy",x:400,cd:0,name:"BOT",alive:true});
-
-  pattern++;
+  enemies.push({x:400,alive:true});
 }
 
-/* HIT */
+/* COLLISION */
 function hit(a,b){
-  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+  return a.x < b.x+30 && a.x+30 > b.x && a.y < 430 && a.y+30 > 400;
 }
 
 /* GAME OVER */
 function gameOver(){
-  running=false;
-  document.getElementById("gameOverScreen").style.display="flex";
+  running = false;
+  document.getElementById("gameOver").style.display="flex";
   document.getElementById("restartBtn").style.display="block";
-  beep(150,300);
 }
 
 /* LOOP */
@@ -202,83 +151,75 @@ if(!player){requestAnimationFrame(loop);return;}
 if(running){
 
   /* SCORE = 1 PER SECOND */
-  scoreTimer++;
-  if(scoreTimer >= 60){
+  scoreTick++;
+  if(scoreTick >= 60){
     score++;
-    scoreTimer = 0;
+    scoreTick=0;
   }
 
-  document.getElementById("scoreBox").innerText = "Score: " + score;
+  document.getElementById("score").innerText="Score: "+score;
 
+  /* PLAYER */
   player.prevY = player.y;
 
-  player.vy+=0.6;
-  player.y+=player.vy;
+  player.vy += 0.6;
+  player.y += player.vy;
 
-  if(player.y>400){
-    player.y=400;
-    player.vy=0;
-    player.jumping=false;
+  if(player.y > 400){
+    player.y = 400;
+    player.vy = 0;
+    player.jumping = false;
   }
 
-  timer++;
-  if(timer>120){
+  /* SPAWN */
+  spawnTimer++;
+  if(spawnTimer > 100){
     spawn();
-    timer=0;
+    spawnTimer=0;
   }
 
-  for(let o of objects){
-    o.x-=3;
+  /* ENEMIES */
+  for(let e of enemies){
+    if(!e.alive) continue;
 
-    if(o.type==="spike"){
-      ctx.fillStyle="red";
-      ctx.fillRect(o.x,400,30,30);
+    e.x -= 3;
 
-      if(hit(player,{x:o.x,y:400,w:30,h:30}) && !shieldActive){
+    ctx.fillStyle="orange";
+    ctx.fillRect(e.x,400,30,30);
+
+    let enemyBox = {x:e.x,y:400};
+
+    let falling = player.vy > 0;
+    let wasAbove = player.prevY + 30 <= 400;
+
+    if(player.x < e.x+30 && player.x+30 > e.x){
+
+      if(falling && wasAbove){
+        e.alive=false;
+        player.vy = -8;
+        score += 5;
+      } else {
         gameOver();
       }
     }
-
-    if(o.type==="enemy" && o.alive){
-
-      ctx.fillStyle="orange";
-      ctx.fillRect(o.x,380,30,30);
-
-      ctx.fillStyle="white";
-      ctx.fillText(o.name,o.x,370);
-
-      let enemyBox = {x:o.x,y:380,w:30,h:30};
-
-      let falling = player.vy > 0;
-      let wasAbove = player.prevY + 30 <= enemyBox.y;
-
-      if(hit(player,enemyBox)){
-
-        if(falling && wasAbove){
-          o.alive = false;
-          player.vy = -8;
-          score += 5;
-          beep(1000,80);
-        } else {
-          if(!shieldActive){
-            gameOver();
-          }
-        }
-      }
-    }
   }
 
-  objects=objects.filter(o=>o.x>-100 && o.alive !== false);
+  enemies = enemies.filter(e=>e.x>-100 && e.alive);
 
   /* PLAYER */
   ctx.fillStyle="lime";
   ctx.fillRect(player.x,player.y,30,30);
 
+}else{
+  ctx.fillStyle="white";
+  ctx.font="30px Arial";
+  ctx.fillText("GAME OVER",120,250);
 }
 
 requestAnimationFrame(loop);
 }
 
+startGame();
 loop();
 
 </script>
