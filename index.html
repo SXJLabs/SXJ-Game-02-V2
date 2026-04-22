@@ -19,7 +19,7 @@ canvas {
 }
 
 /* CONTROLS */
-#jumpBtn, #shieldBtn, #restartBtn {
+#jumpBtn, #shieldBtn {
   position: fixed;
   z-index: 10;
   padding: 12px 16px;
@@ -30,17 +30,34 @@ canvas {
 #jumpBtn { bottom: 20px; left: 20px; display:none; }
 #shieldBtn { bottom: 20px; right: 20px; display:none; }
 
-#restartBtn {
-  top: 60%;
-  left: 50%;
-  transform: translate(-50%,-50%);
+/* SCORE TOP RIGHT */
+#scoreBox {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  font-size: 20px;
+  z-index: 10;
   display: none;
-  font-size: 18px;
-  background: white;
-  color: black;
 }
 
-/* GAME OVER SCREEN (FIXED BIG CENTER) */
+/* RESTART TOP CENTER */
+#restartBtn {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+
+  display: none;
+  padding: 10px 18px;
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+/* GAME OVER TEXT */
 #gameOverScreen {
   position: fixed;
   width: 100%;
@@ -49,19 +66,13 @@ canvas {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  background: rgba(0,0,0,0.7);
-  z-index: 20;
+  background: rgba(0,0,0,0.6);
+  z-index: 15;
 }
 
 #gameOverText {
   font-size: 40px;
   margin-bottom: 20px;
-}
-
-button {
-  padding: 14px 20px;
-  border-radius: 10px;
-  border: none;
 }
 </style>
 </head>
@@ -70,12 +81,15 @@ button {
 
 <canvas id="game" width="400" height="500"></canvas>
 
+<div id="scoreBox">Score: 0</div>
+
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="shield()">SHIELD</button>
 
+<button id="restartBtn" onclick="restartGame()">RESTART</button>
+
 <div id="gameOverScreen">
   <div id="gameOverText">GAME OVER</div>
-  <button onclick="restartGame()">RESTART</button>
 </div>
 
 <script>
@@ -88,7 +102,9 @@ let running=false;
 let timer=0;
 let pattern=0;
 let shieldActive=false;
+
 let score=0;
+let scoreTimer=0;
 
 /* AUDIO */
 let audioCtx;
@@ -111,18 +127,23 @@ function beep(freq,time){
 function startGame(){
 
   document.getElementById("gameOverScreen").style.display="none";
+  document.getElementById("restartBtn").style.display="none";
 
   canvas.style.display="block";
   document.getElementById("jumpBtn").style.display="block";
   document.getElementById("shieldBtn").style.display="block";
+  document.getElementById("scoreBox").style.display="block";
 
-  player={x:50,y:400,vy:0,jumping:false,w:30,h:30,prevY:400};
+  player={x:50,y:400,vy:0,jumping:false,prevY:400};
 
   objects=[];
   bullets=[];
   timer=0;
   pattern=0;
+
   score=0;
+  scoreTimer=0;
+
   running=true;
 
   beep(600,100);
@@ -167,6 +188,7 @@ function hit(a,b){
 function gameOver(){
   running=false;
   document.getElementById("gameOverScreen").style.display="flex";
+  document.getElementById("restartBtn").style.display="block";
   beep(150,300);
 }
 
@@ -179,7 +201,14 @@ if(!player){requestAnimationFrame(loop);return;}
 
 if(running){
 
-  score++;
+  /* SCORE = 1 PER SECOND */
+  scoreTimer++;
+  if(scoreTimer >= 60){
+    score++;
+    scoreTimer = 0;
+  }
+
+  document.getElementById("scoreBox").innerText = "Score: " + score;
 
   player.prevY = player.y;
 
@@ -218,7 +247,6 @@ if(running){
       ctx.fillStyle="white";
       ctx.fillText(o.name,o.x,370);
 
-      /* 🦶 MARIO STOMP LOGIC */
       let enemyBox = {x:o.x,y:380,w:30,h:30};
 
       let falling = player.vy > 0;
@@ -227,10 +255,9 @@ if(running){
       if(hit(player,enemyBox)){
 
         if(falling && wasAbove){
-          // stomp kill
           o.alive = false;
-          player.vy = -8; // bounce
-          score += 50;
+          player.vy = -8;
+          score += 5;
           beep(1000,80);
         } else {
           if(!shieldActive){
@@ -246,11 +273,6 @@ if(running){
   /* PLAYER */
   ctx.fillStyle="lime";
   ctx.fillRect(player.x,player.y,30,30);
-
-  /* SCORE */
-  ctx.fillStyle="white";
-  ctx.font="20px Arial";
-  ctx.fillText("SCORE: " + score,10,30);
 
 }
 
