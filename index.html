@@ -13,7 +13,7 @@ body {
   color: white;
 }
 
-/* SCREEN */
+/* SCREEN SYSTEM */
 .screen {
   position: fixed;
   width: 100%;
@@ -25,25 +25,22 @@ body {
   gap: 15px;
 }
 
-/* BUTTON ANIMATION FIX */
+/* STRONG BUTTON FEEDBACK */
 button {
   padding: 14px 22px;
   font-size: 18px;
-  border-radius: 10px;
   border: none;
+  border-radius: 10px;
   transition: 0.15s;
+  background: #222;
+  color: white;
 }
 
-/* CLICK ANIMATION */
+/* REAL CLICK ANIMATION */
 button:active {
-  transform: scale(0.92);
-  opacity: 0.7;
-}
-
-/* INPUT */
-input {
-  padding: 10px;
-  font-size: 16px;
+  transform: scale(0.9);
+  background: #000;
+  box-shadow: 0 0 15px white;
 }
 
 /* CANVAS */
@@ -76,16 +73,16 @@ canvas {
 
 <!-- MAIN -->
 <div id="main" class="screen" style="display:flex;">
-  <button onclick="clickFX(startGame)">PLAY</button>
-  <button onclick="clickFX(()=>show('settings'))">SETTINGS</button>
+  <button onclick="startGame()">PLAY</button>
+  <button onclick="show('settings')">SETTINGS</button>
 </div>
 
 <!-- SETTINGS -->
 <div id="settings" class="screen">
-  <button onclick="clickFX(()=>show('player'))">Change Player</button>
-  <button onclick="clickFX(()=>show('color'))">Change Color</button>
-  <button onclick="clickFX(()=>show('text'))">Change Text</button>
-  <button onclick="clickFX(()=>show('main'))">BACK</button>
+  <button onclick="show('player')">Change Player</button>
+  <button onclick="show('color')">Change Color</button>
+  <button onclick="show('text')">Change Text</button>
+  <button onclick="show('main')">BACK</button>
 </div>
 
 <!-- PLAYER -->
@@ -102,8 +99,8 @@ canvas {
   <button style="background:red" onclick="setColor('red')">RED</button>
   <button style="background:blue" onclick="setColor('blue')">BLUE</button>
   <button style="background:green" onclick="setColor('green')">GREEN</button>
-  <button style="background:yellow" onclick="setColor('yellow')">YELLOW</button>
-  <button style="background:white" onclick="setColor('white')">WHITE</button>
+  <button style="background:yellow;color:black" onclick="setColor('yellow')">YELLOW</button>
+  <button style="background:white;color:black" onclick="setColor('white')">WHITE</button>
   <button onclick="show('settings')">BACK</button>
 </div>
 
@@ -112,7 +109,7 @@ canvas {
   <input id="textInput" placeholder="Enter name">
   <button onclick="saveText()">SAVE</button>
   <button onclick="show('settings')">BACK</button>
-  <p id="saveMsg"></p>
+  <p id="msg"></p>
 </div>
 
 <!-- GAME -->
@@ -122,24 +119,10 @@ canvas {
 
 <script>
 
-let settings = {
-  shape:"square",
-  color:"red",
-  text:"SXJ"
-};
-
-/* CLICK ANIMATION WRAPPER */
-function clickFX(fn){
-  document.body.style.opacity = "0.9";
-  setTimeout(()=>{
-    document.body.style.opacity = "1";
-    fn();
-  },120);
-}
-
-/* SCREEN SYSTEM */
+/* SCREEN CONTROL (FIXED) */
 function show(id){
-  ["main","settings","player","color","text"].forEach(s=>{
+  const screens = ["main","settings","player","color","text"];
+  screens.forEach(s=>{
     document.getElementById(s).style.display="none";
   });
 
@@ -148,33 +131,34 @@ function show(id){
   }
 }
 
-/* SAVE TEXT FIX */
-function saveText(){
-  let val = document.getElementById("textInput").value;
-
-  if(val.trim() !== ""){
-    settings.text = val.toUpperCase();
-
-    document.getElementById("saveMsg").innerText = "SAVED ✔";
-    setTimeout(()=>{
-      document.getElementById("saveMsg").innerText = "";
-    },1000);
-  }
-}
-
 /* SETTINGS */
+let settings = {
+  shape:"square",
+  color:"red",
+  text:"SXJ"
+};
+
 function setShape(s){ settings.shape=s; }
 function setColor(c){ settings.color=c; }
+
+function saveText(){
+  let v=document.getElementById("textInput").value;
+  if(v.trim() !== ""){
+    settings.text = v.toUpperCase();
+    document.getElementById("msg").innerText="SAVED ✔";
+    setTimeout(()=>document.getElementById("msg").innerText="",1000);
+  }
+}
 
 /* GAME */
 let canvas, ctx;
 let player, spikes=[], running=false, timer=0;
 
 function startGame(){
-  show(null);
+  show("");
 
-  canvas = document.getElementById("game");
-  ctx = canvas.getContext("2d");
+  canvas=document.getElementById("game");
+  ctx=canvas.getContext("2d");
 
   canvas.style.display="block";
   jumpBtn.style.display="block";
@@ -200,7 +184,7 @@ function jump(){
   }
 }
 
-/* PLAYER DRAW */
+/* PLAYER */
 function drawPlayer(){
   ctx.fillStyle=settings.color;
 
@@ -232,7 +216,7 @@ function drawPlayer(){
   ctx.fillText(settings.text,player.x,player.y-5);
 }
 
-/* GAME LOOP */
+/* LOOP */
 function loop(){
   if(!ctx) return;
 
