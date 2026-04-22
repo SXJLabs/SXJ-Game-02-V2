@@ -2,6 +2,8 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SXJ Runner</title>
+
 <style>
 body { margin:0; background:black; color:white; font-family:Arial; overflow:hidden; }
 
@@ -16,7 +18,7 @@ body { margin:0; background:black; color:white; font-family:Arial; overflow:hidd
 }
 
 button {
-  padding:15px 25px;
+  padding:14px 22px;
   font-size:18px;
   border:none;
   border-radius:10px;
@@ -29,7 +31,7 @@ canvas {
   border:2px solid white;
 }
 
-/* jump button */
+/* jump */
 #jumpBtn {
   position:fixed;
   bottom:30px;
@@ -37,18 +39,18 @@ canvas {
   display:none;
 }
 
-/* start button */
+/* start */
 #startBtn {
   position:fixed;
-  top:50%; left:50%;
+  top:50%;
+  left:50%;
   transform:translate(-50%,-50%);
   display:none;
 }
 
-/* colored buttons */
+/* colors */
 .colorBtn {
   width:120px;
-  color:black;
   font-weight:bold;
 }
 </style>
@@ -59,24 +61,24 @@ canvas {
 <!-- MAIN -->
 <div id="main" class="screen" style="display:flex;">
   <button onclick="startGame()">PLAY</button>
-  <button onclick="go('settings')">SETTINGS</button>
+  <button onclick="showScreen('settings')">SETTINGS</button>
 </div>
 
 <!-- SETTINGS -->
 <div id="settings" class="screen">
-  <button onclick="go('player')">Change Player</button>
-  <button onclick="go('color')">Change Color</button>
-  <button onclick="go('text')">Change Text</button>
-  <button onclick="go('main')">BACK</button>
+  <button onclick="showScreen('player')">Change Player</button>
+  <button onclick="showScreen('color')">Change Color</button>
+  <button onclick="showScreen('text')">Change Text</button>
+  <button onclick="showScreen('main')">BACK</button>
 </div>
 
 <!-- PLAYER -->
 <div id="player" class="screen">
-  <button onclick="setShape('square')">Square</button>
-  <button onclick="setShape('circle')">Circle</button>
-  <button onclick="setShape('triangle')">Triangle</button>
-  <button onclick="setShape('heart')">Heart</button>
-  <button onclick="go('settings')">BACK</button>
+  <button onclick="setShape('square')">SQUARE</button>
+  <button onclick="setShape('circle')">CIRCLE</button>
+  <button onclick="setShape('triangle')">TRIANGLE</button>
+  <button onclick="setShape('heart')">HEART</button>
+  <button onclick="showScreen('settings')">BACK</button>
 </div>
 
 <!-- COLOR -->
@@ -86,36 +88,45 @@ canvas {
   <button class="colorBtn" style="background:green" onclick="setColor('green')">GREEN</button>
   <button class="colorBtn" style="background:yellow" onclick="setColor('yellow')">YELLOW</button>
   <button class="colorBtn" style="background:white" onclick="setColor('white')">WHITE</button>
-  <button onclick="go('settings')">BACK</button>
+  <button onclick="showScreen('settings')">BACK</button>
 </div>
 
 <!-- TEXT -->
 <div id="text" class="screen">
   <input id="textInput" placeholder="Enter text">
   <button onclick="saveText()">SAVE</button>
-  <button onclick="go('settings')">BACK</button>
+  <button onclick="showScreen('settings')">BACK</button>
 </div>
 
 <!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 <button id="jumpBtn" onclick="jump()">JUMP</button>
-<button id="startBtn" onclick="restart()">START</button>
+<button id="startBtn" onclick="backToMenu()">START</button>
 
 <script>
+/* SCREEN CONTROL */
 const screens = ["main","settings","player","color","text"];
-function go(id){
-  screens.forEach(s => document.getElementById(s).style.display="none");
+
+function showScreen(id){
+  screens.forEach(s=>{
+    document.getElementById(s).style.display="none";
+  });
   document.getElementById(id).style.display="flex";
 }
 
 /* SETTINGS */
-let settings = { shape:"square", color:"red", text:"SXJ" };
+let settings = {
+  shape:"square",
+  color:"red",
+  text:"SXJ"
+};
 
 function setShape(s){ settings.shape=s; }
 function setColor(c){ settings.color=c; }
+
 function saveText(){
-  let v=document.getElementById("textInput").value;
-  if(v) settings.text=v.toUpperCase();
+  let val=document.getElementById("textInput").value;
+  if(val) settings.text=val.toUpperCase();
 }
 
 /* GAME */
@@ -124,17 +135,27 @@ const ctx=canvas.getContext("2d");
 
 let player, spikes=[], running=false, timer=0;
 
-function go(id){
-  screens.forEach(s => {
-    document.getElementById(s).style.display = "none";
+function startGame(){
+  // hide all screens
+  screens.forEach(s=>{
+    document.getElementById(s).style.display="none";
   });
 
-  if(id){
-    document.getElementById(id).style.display = "flex";
-  }
-} function runction restart(){
+  canvas.style.display="block";
+  jumpBtn.style.display="block";
+  startBtn.style.display="none";
+
+  player={x:50,y:400,vy:0,jumping:false};
+  spikes=[];
+  running=true;
+  timer=0;
+}
+
+function backToMenu(){
   canvas.style.display="none";
-  jumpBtn.style.display="startBtn startBtn.style.display="nonemain go("main");
+  jumpBtn.style.display="none";
+  startBtn.style.display="none";
+  showScreen("main");
 }
 
 function jump(){
@@ -148,7 +169,9 @@ function jump(){
 function drawPlayer(){
   ctx.fillStyle=settings.color;
 
-  if(settings.shape==="square") ctx.fillRect(player.x,player.y,30,30);
+  if(settings.shape==="square"){
+    ctx.fillRect(player.x,player.y,30,30);
+  }
 
   if(settings.shape==="circle"){
     ctx.beginPath();
@@ -190,7 +213,7 @@ function loop(){
     }
 
     timer++;
-    if(timer>140){ // GOOD SPACING
+    if(timer>140){
       spikes.push({x:400});
       timer=0;
     }
