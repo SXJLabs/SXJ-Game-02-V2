@@ -10,6 +10,7 @@ body {
   background: black;
   overflow: hidden;
   font-family: Arial;
+  color: white;
 }
 
 /* SCREENS */
@@ -18,19 +19,17 @@ body {
   width: 100%;
   height: 100%;
   display: none;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
-  gap: 15px;
-  color: white;
+  gap: 12px;
 }
 
 /* BUTTONS */
 button {
-  padding: 14px 22px;
+  padding: 14px 20px;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
 }
 
 /* CANVAS */
@@ -39,7 +38,7 @@ canvas {
   background: black;
 }
 
-/* GAME BUTTONS (INSIDE VIEWPORT FIXED) */
+/* GAME BUTTONS (INSIDE SCREEN FIX) */
 #jumpBtn {
   position: fixed;
   bottom: 20px;
@@ -80,7 +79,6 @@ canvas {
   <button onclick="show('main')">BACK</button>
 </div>
 
-<!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
@@ -92,13 +90,13 @@ canvas {
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let player, objects = [], bullets = [];
+let player, spikes = [], bullets = [];
 let running = false;
 let timer = 0;
 let pattern = 0;
 let shieldActive = false;
 
-/* SCREEN SWITCH */
+/* MENU CONTROL */
 function show(id){
   document.getElementById("main").style.display="none";
   document.getElementById("settings").style.display="none";
@@ -108,7 +106,7 @@ function show(id){
   }
 }
 
-/* START GAME (FIXED SAFE INIT) */
+/* START GAME */
 function startGame(){
   show("");
 
@@ -117,9 +115,9 @@ function startGame(){
   document.getElementById("shieldBtn").style.display = "block";
   document.getElementById("startBtn").style.display = "none";
 
-  player = {x:50,y:400,vy:0,jumping:false};
+  player = {x:50,y:400,vy:0,jumping:false,w:30,h:30};
 
-  objects = [];
+  spikes = [];
   bullets = [];
   timer = 0;
   pattern = 0;
@@ -149,22 +147,32 @@ function shield(){
   setTimeout(()=>shieldActive=false, 1200);
 }
 
-/* PATTERN SYSTEM */
+/* SPAWN PATTERN */
 function spawn(){
   let t = pattern % 4;
 
-  if(t === 0) objects.push({t:"spike",x:400});
-  if(t === 1) objects.push({t:"enemy",x:400,cd:0});
-  if(t === 2) objects.push({t:"enemy",x:400,cd:0});
+  if(t === 0) spikes.push({x:400});
+  if(t === 1) bullets.push({x:400,y:390,fromEnemy:true});
+  if(t === 2) bullets.push({x:420,y:390,fromEnemy:true});
   if(t === 3){
-    objects.push({t:"spike",x:400});
-    objects.push({t:"spike",x:460});
+    spikes.push({x:400});
+    spikes.push({x:460});
   }
 
   pattern++;
 }
 
-/* GAME LOOP (SAFE) */
+/* COLLISION FIX (REAL HITBOX) */
+function hit(a,b){
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+/* LOOP */
 function loop(){
 
   ctx.clearRect(0,0,400,500);
@@ -176,6 +184,7 @@ function loop(){
 
   if(running){
 
+    /* GRAVITY */
     player.vy += 0.6;
     player.y += player.vy;
 
@@ -185,57 +194,51 @@ function loop(){
       player.jumping = false;
     }
 
+    /* SPAWN WITH SPACE */
     timer++;
     if(timer > 140){
       spawn();
       timer = 0;
     }
 
-    for(let o of objects){
-      o.x -= 2.5;
+    /* SPIKES */
+    for(let s of spikes){
+      s.x -= 3;
 
-      if(o.t === "spike"){
-        ctx.fillStyle="red";
-        ctx.beginPath();
-        ctx.moveTo(o.x,430);
-        ctx.lineTo(o.x+15,400);
-        ctx.lineTo(o.x+30,430);
-        ctx.fill();
+      let spike = {x:s.x,y:400,w:30,h:30};
 
-        if(o.x < player.x+30 && player.y > 370 && !shieldActive){
-          running = false;
-          document.getElementById("startBtn").style.display="block";
-        }
-      }
+      ctx.fillStyle="red";
+      ctx.beginPath();
+      ctx.moveTo(s.x,430);
+      ctx.lineTo(s.x+15,400);
+      ctx.lineTo(s.x+30,430);
+      ctx.fill();
 
-      if(o.t === "enemy"){
-        ctx.fillStyle="orange";
-        ctx.fillRect(o.x,380,30,30);
-
-        o.cd++;
-
-        if(o.cd > 90){
-          bullets.push({x:o.x,y:400});
-          o.cd = 0;
-        }
-      }
-    }
-
-    for(let b of bullets){
-      b.x -= 4;
-
-      ctx.fillStyle="yellow";
-      ctx.fillRect(b.x,b.y,5,5);
-
-      if(b.x < player.x+30 && player.y > 370 && !shieldActive){
+      if(hit(player,spike) && !shieldActive){
         running = false;
         document.getElementById("startBtn").style.display="block";
       }
     }
 
-    objects = objects.filter(o=>o.x>-100);
-    bullets = bullets.filter(b=>b.x>-50);
+    /* BULLETS */
+    for(let b of bullets){
+      b.x -= 4;
 
+      let bullet = {x:b.x,y:b.y,w:5,h:5};
+
+      ctx.fillStyle="yellow";
+      ctx.fillRect(b.x,b.y,5,5);
+
+      if(hit(player,bullet) && !shieldActive){
+        running = false;
+        document.getElementById("startBtn").style.display="block";
+      }
+    }
+
+    spikes = spikes.filter(s=>s.x>-100);
+    bullets = bullets.filter(b=>b.x>-100);
+
+    /* PLAYER */
     ctx.fillStyle = shieldActive ? "cyan" : "white";
     ctx.fillRect(player.x,player.y,30,30);
 
