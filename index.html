@@ -13,7 +13,7 @@ body {
   color: white;
 }
 
-/* SCREEN SYSTEM */
+/* SCREEN */
 .screen {
   position: fixed;
   width: 100%;
@@ -25,11 +25,25 @@ body {
   gap: 15px;
 }
 
+/* BUTTON ANIMATION FIX */
 button {
   padding: 14px 22px;
   font-size: 18px;
-  border: none;
   border-radius: 10px;
+  border: none;
+  transition: 0.15s;
+}
+
+/* CLICK ANIMATION */
+button:active {
+  transform: scale(0.92);
+  opacity: 0.7;
+}
+
+/* INPUT */
+input {
+  padding: 10px;
+  font-size: 16px;
 }
 
 /* CANVAS */
@@ -60,18 +74,18 @@ canvas {
 
 <body>
 
-<!-- MAIN MENU -->
+<!-- MAIN -->
 <div id="main" class="screen" style="display:flex;">
-  <button onclick="startGame()">PLAY</button>
-  <button onclick="show('settings')">SETTINGS</button>
+  <button onclick="clickFX(startGame)">PLAY</button>
+  <button onclick="clickFX(()=>show('settings'))">SETTINGS</button>
 </div>
 
 <!-- SETTINGS -->
 <div id="settings" class="screen">
-  <button onclick="show('player')">Change Player</button>
-  <button onclick="show('color')">Change Color</button>
-  <button onclick="show('text')">Change Text</button>
-  <button onclick="show('main')">BACK</button>
+  <button onclick="clickFX(()=>show('player'))">Change Player</button>
+  <button onclick="clickFX(()=>show('color'))">Change Color</button>
+  <button onclick="clickFX(()=>show('text'))">Change Text</button>
+  <button onclick="clickFX(()=>show('main'))">BACK</button>
 </div>
 
 <!-- PLAYER -->
@@ -95,9 +109,10 @@ canvas {
 
 <!-- TEXT -->
 <div id="text" class="screen">
-  <input id="textInput" placeholder="Enter text">
+  <input id="textInput" placeholder="Enter name">
   <button onclick="saveText()">SAVE</button>
   <button onclick="show('settings')">BACK</button>
+  <p id="saveMsg"></p>
 </div>
 
 <!-- GAME -->
@@ -107,96 +122,114 @@ canvas {
 
 <script>
 
-/* SCREEN CONTROL */
+let settings = {
+  shape:"square",
+  color:"red",
+  text:"SXJ"
+};
+
+/* CLICK ANIMATION WRAPPER */
+function clickFX(fn){
+  document.body.style.opacity = "0.9";
+  setTimeout(()=>{
+    document.body.style.opacity = "1";
+    fn();
+  },120);
+}
+
+/* SCREEN SYSTEM */
 function show(id){
   ["main","settings","player","color","text"].forEach(s=>{
     document.getElementById(s).style.display="none";
   });
-  document.getElementById(id).style.display="flex";
+
+  if(id){
+    document.getElementById(id).style.display="flex";
+  }
+}
+
+/* SAVE TEXT FIX */
+function saveText(){
+  let val = document.getElementById("textInput").value;
+
+  if(val.trim() !== ""){
+    settings.text = val.toUpperCase();
+
+    document.getElementById("saveMsg").innerText = "SAVED ✔";
+    setTimeout(()=>{
+      document.getElementById("saveMsg").innerText = "";
+    },1000);
+  }
 }
 
 /* SETTINGS */
-let settings = {
-  shape: "square",
-  color: "red",
-  text: "SXJ"
-};
+function setShape(s){ settings.shape=s; }
+function setColor(c){ settings.color=c; }
 
-function setShape(s){ settings.shape = s; }
-function setColor(c){ settings.color = c; }
-
-function saveText(){
-  let v = document.getElementById("textInput").value;
-  if(v) settings.text = v.toUpperCase();
-}
-
-/* GAME VARIABLES */
+/* GAME */
 let canvas, ctx;
-let player, spikes = [], running = false, timer = 0;
+let player, spikes=[], running=false, timer=0;
 
-/* START GAME */
 function startGame(){
-  show(""); // hide all screens safely
+  show(null);
 
   canvas = document.getElementById("game");
   ctx = canvas.getContext("2d");
 
-  canvas.style.display = "block";
-  document.getElementById("jumpBtn").style.display = "block";
-  document.getElementById("startBtn").style.display = "none";
+  canvas.style.display="block";
+  jumpBtn.style.display="block";
+  startBtn.style.display="none";
 
-  player = {x:50,y:400,vy:0,jumping:false};
-  spikes = [];
-  running = true;
-  timer = 0;
+  player={x:50,y:400,vy:0,jumping:false};
+  spikes=[];
+  running=true;
+  timer=0;
 }
 
-/* RESTART / BACK */
 function restart(){
-  canvas.style.display = "none";
-  document.getElementById("jumpBtn").style.display = "none";
-  document.getElementById("startBtn").style.display = "none";
+  canvas.style.display="none";
+  jumpBtn.style.display="none";
+  startBtn.style.display="none";
   show("main");
 }
 
-/* JUMP */
 function jump(){
   if(!player.jumping){
-    player.vy = -12;
-    player.jumping = true;
+    player.vy=-12;
+    player.jumping=true;
   }
 }
 
-/* DRAW PLAYER */
+/* PLAYER DRAW */
 function drawPlayer(){
-  ctx.fillStyle = settings.color;
+  ctx.fillStyle=settings.color;
 
-  if(settings.shape === "square")
-    ctx.fillRect(player.x, player.y, 30, 30);
+  if(settings.shape==="square")
+    ctx.fillRect(player.x,player.y,30,30);
 
-  if(settings.shape === "circle"){
+  if(settings.shape==="circle"){
     ctx.beginPath();
-    ctx.arc(player.x+15, player.y+15, 15, 0, Math.PI*2);
+    ctx.arc(player.x+15,player.y+15,15,0,Math.PI*2);
     ctx.fill();
   }
 
-  if(settings.shape === "triangle"){
+  if(settings.shape==="triangle"){
     ctx.beginPath();
-    ctx.moveTo(player.x, player.y+30);
-    ctx.lineTo(player.x+15, player.y);
-    ctx.lineTo(player.x+30, player.y+30);
+    ctx.moveTo(player.x,player.y+30);
+    ctx.lineTo(player.x+15,player.y);
+    ctx.lineTo(player.x+30,player.y+30);
     ctx.fill();
   }
 
-  if(settings.shape === "heart"){
+  if(settings.shape==="heart"){
     ctx.beginPath();
-    ctx.moveTo(player.x+15, player.y+30);
+    ctx.moveTo(player.x+15,player.y+30);
     ctx.bezierCurveTo(player.x-10,player.y,player.x+40,player.y,player.x+15,player.y+30);
     ctx.fill();
   }
 
-  ctx.fillStyle = "white";
-  ctx.fillText(settings.text, player.x, player.y - 5);
+  ctx.fillStyle="white";
+  ctx.fillText(settings.text,player.x,player.y-5);
 }
 
 /* GAME LOOP */
@@ -207,43 +240,43 @@ function loop(){
 
   if(running){
 
-    player.vy += 0.6;
-    player.y += player.vy;
+    player.vy+=0.6;
+    player.y+=player.vy;
 
-    if(player.y > 400){
-      player.y = 400;
-      player.vy = 0;
-      player.jumping = false;
+    if(player.y>400){
+      player.y=400;
+      player.vy=0;
+      player.jumping=false;
     }
 
     timer++;
-    if(timer > 140){
+    if(timer>140){
       spikes.push({x:400});
-      timer = 0;
+      timer=0;
     }
 
     for(let s of spikes){
-      s.x -= 3;
+      s.x-=3;
 
-      ctx.fillStyle = "red";
+      ctx.fillStyle="red";
       ctx.beginPath();
       ctx.moveTo(s.x,430);
       ctx.lineTo(s.x+15,400);
       ctx.lineTo(s.x+30,430);
       ctx.fill();
 
-      if(s.x < player.x+30 && s.x+30 > player.x && player.y > 370){
-        running = false;
-        document.getElementById("startBtn").style.display = "block";
+      if(s.x<player.x+30 && s.x+30>player.x && player.y>370){
+        running=false;
+        startBtn.style.display="block";
       }
     }
 
-    spikes = spikes.filter(s => s.x > -50);
+    spikes = spikes.filter(s=>s.x>-50);
 
     drawPlayer();
 
   } else {
-    ctx.fillStyle = "white";
+    ctx.fillStyle="white";
     ctx.fillText("GAME OVER",150,250);
   }
 
