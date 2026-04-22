@@ -10,7 +10,6 @@ body {
   background: black;
   overflow: hidden;
   font-family: Arial;
-  color: white;
 }
 
 /* SCREENS */
@@ -23,13 +22,28 @@ body {
   justify-content: center;
   align-items: center;
   gap: 12px;
+  color: white;
 }
 
-/* BUTTONS */
+/* EXIT BUTTON */
+#exitBtn {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+}
+
+/* BUTTON ANIMATION */
 button {
   padding: 14px 20px;
-  border: none;
   border-radius: 10px;
+  border: none;
+  transition: 0.15s;
+}
+
+button:active {
+  transform: scale(0.9);
+  opacity: 0.6;
 }
 
 /* CANVAS */
@@ -38,7 +52,7 @@ canvas {
   background: black;
 }
 
-/* GAME BUTTONS (INSIDE SCREEN FIX) */
+/* GAME CONTROLS (INSIDE SCREEN FIX) */
 #jumpBtn {
   position: fixed;
   bottom: 20px;
@@ -54,200 +68,261 @@ canvas {
   display: none;
   z-index: 10;
 }
-
-#startBtn {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%,-50%);
-  display: none;
-  z-index: 10;
-}
 </style>
 </head>
 
 <body>
 
+<!-- EXIT -->
+<button id="exitBtn" onclick="exitGame()">EXIT</button>
+
 <!-- MENU -->
-<div id="main" class="screen" style="display:flex;">
+<div id="menu" class="screen" style="display:flex;">
   <button onclick="startGame()">PLAY</button>
   <button onclick="show('settings')">SETTINGS</button>
 </div>
 
-<!-- SETTINGS -->
+<!-- SETTINGS MAIN -->
 <div id="settings" class="screen">
-  <button onclick="show('main')">BACK</button>
+  <button onclick="show('player')">Change Player</button>
+  <button onclick="show('color')">Change Color</button>
+  <button onclick="show('name')">Change Name</button>
+  <button onclick="backToMenu()">BACK</button>
 </div>
 
+<!-- PLAYER -->
+<div id="player" class="screen">
+  <button onclick="setShape('square')">Square</button>
+  <button onclick="setShape('circle')">Circle</button>
+  <button onclick="setShape('rect')">Rectangle</button>
+  <button onclick="setShape('triangle')">Triangle</button>
+  <button onclick="setShape('heart')">Heart</button>
+</div>
+
+<!-- COLOR -->
+<div id="color" class="screen">
+  <button onclick="setColor('red')" style="background:red">RED</button>
+  <button onclick="setColor('green')" style="background:green">GREEN</button>
+  <button onclick="setColor('yellow')" style="background:yellow;color:black">YELLOW</button>
+  <button onclick="setColor('blue')" style="background:blue">BLUE</button>
+  <button onclick="setColor('white')" style="background:white;color:black">WHITE</button>
+</div>
+
+<!-- NAME -->
+<div id="name" class="screen">
+  <input id="nameInput" placeholder="Enter name">
+  <button onclick="saveName()">SAVE</button>
+  <button onclick="show('settings')">BACK</button>
+</div>
+
+<!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="shield()">SHIELD</button>
-<button id="startBtn" onclick="restart()">START</button>
+
+<!-- BGM -->
+<audio id="bgm" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d1d3c3f1f1.mp3?filename=retro-game-arcade-116819.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+/* STATE */
+let state = "menu";
+let shape = "square";
+let color = "white";
+let playerName = "SXJ";
 
-let player, spikes = [], bullets = [];
-let running = false;
-let timer = 0;
-let pattern = 0;
-let shieldActive = false;
+/* GAME */
+let canvas = document.getElementById("game");
+let ctx = canvas.getContext("2d");
 
-/* MENU CONTROL */
+let player, objects=[], bullets=[];
+let timer=0, pattern=0;
+let running=false;
+let shieldActive=false;
+
+/* SCREEN CONTROL */
 function show(id){
-  document.getElementById("main").style.display="none";
-  document.getElementById("settings").style.display="none";
-
+  ["menu","settings","player","color","name"].forEach(x=>{
+    document.getElementById(x).style.display="none";
+  });
   if(id){
     document.getElementById(id).style.display="flex";
   }
+}
+
+/* MENU BACK */
+function backToMenu(){
+  show("menu");
+}
+
+/* EXIT */
+function exitGame(){
+  window.close();
+  alert("Close tab manually (browser restricts auto-close)");
+}
+
+/* SETTINGS */
+function setShape(s){ shape=s; }
+function setColor(c){ color=c; }
+
+function saveName(){
+  playerName = document.getElementById("nameInput").value || "PLAYER";
+  show("settings");
 }
 
 /* START GAME */
 function startGame(){
   show("");
 
-  canvas.style.display = "block";
-  document.getElementById("jumpBtn").style.display = "block";
-  document.getElementById("shieldBtn").style.display = "block";
-  document.getElementById("startBtn").style.display = "none";
+  canvas.style.display="block";
+  document.getElementById("jumpBtn").style.display="block";
+  document.getElementById("shieldBtn").style.display="block";
+
+  document.getElementById("bgm").play();
 
   player = {x:50,y:400,vy:0,jumping:false,w:30,h:30};
 
-  spikes = [];
-  bullets = [];
-  timer = 0;
-  pattern = 0;
-  running = true;
-}
-
-/* RESTART */
-function restart(){
-  canvas.style.display="none";
-  document.getElementById("jumpBtn").style.display="none";
-  document.getElementById("shieldBtn").style.display="none";
-  document.getElementById("startBtn").style.display="none";
-
-  show("main");
+  objects=[];
+  bullets=[];
+  timer=0;
+  pattern=0;
+  running=true;
 }
 
 /* CONTROLS */
 function jump(){
   if(!player.jumping){
-    player.vy = -12;
-    player.jumping = true;
+    player.vy=-12;
+    player.jumping=true;
   }
 }
 
 function shield(){
-  shieldActive = true;
-  setTimeout(()=>shieldActive=false, 1200);
+  shieldActive=true;
+  setTimeout(()=>shieldActive=false,1200);
 }
 
-/* SPAWN PATTERN */
+/* PATTERN:
+1 spike
+gap
+1 spike
+enemy SHAN
+enemy RAJEEN
+repeat
+*/
 function spawn(){
-  let t = pattern % 4;
+  let t = pattern % 5;
 
-  if(t === 0) spikes.push({x:400});
-  if(t === 1) bullets.push({x:400,y:390,fromEnemy:true});
-  if(t === 2) bullets.push({x:420,y:390,fromEnemy:true});
-  if(t === 3){
-    spikes.push({x:400});
-    spikes.push({x:460});
-  }
+  if(t===0) objects.push({type:"spike",x:400});
+  if(t===1) objects.push({type:"spike",x:460});
+  if(t===2) {} // GAP
+  if(t===3) objects.push({type:"enemy",x:400,cd:0,name:"SHAN"});
+  if(t===4) objects.push({type:"enemy",x:400,cd:0,name:"RAJEEN"});
 
   pattern++;
 }
 
-/* COLLISION FIX (REAL HITBOX) */
+/* COLLISION */
 function hit(a,b){
   return (
-    a.x < b.x + b.w &&
-    a.x + a.w > b.x &&
-    a.y < b.y + b.h &&
-    a.y + a.h > b.y
+    a.x < b.x+b.w &&
+    a.x+a.w > b.x &&
+    a.y < b.y+b.h &&
+    a.y+a.h > b.y
   );
 }
 
 /* LOOP */
 function loop(){
 
-  ctx.clearRect(0,0,400,500);
+ctx.clearRect(0,0,400,500);
 
-  if(!player){
-    requestAnimationFrame(loop);
-    return;
+if(!player){ requestAnimationFrame(loop); return; }
+
+if(running){
+
+  /* PLAYER */
+  player.vy+=0.6;
+  player.y+=player.vy;
+
+  if(player.y>400){
+    player.y=400;
+    player.vy=0;
+    player.jumping=false;
   }
 
-  if(running){
+  /* SPAWN */
+  timer++;
+  if(timer>140){
+    spawn();
+    timer=0;
+  }
 
-    /* GRAVITY */
-    player.vy += 0.6;
-    player.y += player.vy;
+  /* OBJECTS */
+  for(let o of objects){
+    o.x-=2.5;
 
-    if(player.y > 400){
-      player.y = 400;
-      player.vy = 0;
-      player.jumping = false;
-    }
-
-    /* SPAWN WITH SPACE */
-    timer++;
-    if(timer > 140){
-      spawn();
-      timer = 0;
-    }
-
-    /* SPIKES */
-    for(let s of spikes){
-      s.x -= 3;
-
-      let spike = {x:s.x,y:400,w:30,h:30};
-
+    if(o.type==="spike"){
       ctx.fillStyle="red";
       ctx.beginPath();
-      ctx.moveTo(s.x,430);
-      ctx.lineTo(s.x+15,400);
-      ctx.lineTo(s.x+30,430);
+      ctx.moveTo(o.x,430);
+      ctx.lineTo(o.x+15,400);
+      ctx.lineTo(o.x+30,430);
       ctx.fill();
 
-      if(hit(player,spike) && !shieldActive){
-        running = false;
-        document.getElementById("startBtn").style.display="block";
+      let box={x:o.x,y:400,w:30,h:30};
+
+      if(hit(player,box) && !shieldActive){
+        running=false;
       }
     }
 
-    /* BULLETS */
-    for(let b of bullets){
-      b.x -= 4;
+    if(o.type==="enemy"){
+      ctx.fillStyle="orange";
+      ctx.fillRect(o.x,380,30,30);
 
-      let bullet = {x:b.x,y:b.y,w:5,h:5};
+      o.cd++;
 
-      ctx.fillStyle="yellow";
-      ctx.fillRect(b.x,b.y,5,5);
-
-      if(hit(player,bullet) && !shieldActive){
-        running = false;
-        document.getElementById("startBtn").style.display="block";
+      if(o.cd>60){
+        bullets.push({x:o.x,y:400,w:5,h:5});
+        o.cd=0;
       }
+
+      ctx.fillStyle="white";
+      ctx.fillText(o.name,o.x,370);
     }
-
-    spikes = spikes.filter(s=>s.x>-100);
-    bullets = bullets.filter(b=>b.x>-100);
-
-    /* PLAYER */
-    ctx.fillStyle = shieldActive ? "cyan" : "white";
-    ctx.fillRect(player.x,player.y,30,30);
-
-  } else {
-    ctx.fillStyle="white";
-    ctx.fillText("GAME OVER",150,250);
   }
 
-  requestAnimationFrame(loop);
+  /* BULLETS */
+  for(let b of bullets){
+    b.x-=4;
+    ctx.fillStyle="yellow";
+    ctx.fillRect(b.x,b.y,5,5);
+
+    if(hit(player,b) && !shieldActive){
+      running=false;
+    }
+  }
+
+  objects=objects.filter(o=>o.x>-100);
+  bullets=bullets.filter(b=>b.x>-100);
+
+  /* PLAYER */
+  ctx.fillStyle=color;
+  ctx.fillRect(player.x,player.y,30,30);
+
+  ctx.fillStyle="white";
+  ctx.fillText(playerName,player.x,player.y-5);
+
+}else{
+  ctx.fillStyle="white";
+  ctx.fillText("GAME OVER",150,250);
+}
+
+requestAnimationFrame(loop);
 }
 
 loop();
