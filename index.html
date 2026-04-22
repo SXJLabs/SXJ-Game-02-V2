@@ -9,11 +9,10 @@ body {
   margin: 0;
   background: black;
   font-family: Arial;
-  overflow: hidden;
   color: white;
+  overflow: hidden;
 }
 
-/* MENUS */
 .menu {
   position: fixed;
   width: 100%;
@@ -23,7 +22,6 @@ body {
   justify-content: center;
   align-items: center;
   gap: 20px;
-  background: black;
 }
 
 .hidden { display: none; }
@@ -43,20 +41,16 @@ canvas {
 }
 
 /* GAME BUTTONS */
-#jumpBtn, #shieldBtn {
+#jumpBtn {
   display: none;
   position: fixed;
   bottom: 30px;
+  left: 20px;
   padding: 18px;
-  border-radius: 14px;
-  background: #333;
-  color: white;
 }
-#jumpBtn { left: 20px; }
-#shieldBtn { right: 20px; }
 
 /* START BUTTON */
-#restartBtn {
+#startBtn {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -66,11 +60,12 @@ canvas {
   display: none;
 }
 
-/* COLOR BUTTONS */
+/* COLOR BUTTON STYLE */
 .colorBtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  width: 100px;
+  padding: 10px;
+  color: black;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -83,44 +78,44 @@ canvas {
   <button onclick="openSettings()">SETTINGS</button>
 </div>
 
-<!-- SETTINGS -->
+<!-- SETTINGS MAIN -->
 <div id="settingsMenu" class="menu hidden">
-  <button onclick="showSection('player')">Change Player</button>
-  <button onclick="showSection('color')">Change Color</button>
-  <button onclick="showSection('text')">Edit Text</button>
-  <button onclick="backMenu()">BACK</button>
+  <button onclick="openSub('player')">Change Player</button>
+  <button onclick="openSub('color')">Change Color</button>
+  <button onclick="openSub('text')">Change Text</button>
+  <button onclick="backToMain()">BACK</button>
 </div>
 
-<!-- PLAYER OPTIONS -->
+<!-- PLAYER -->
 <div id="playerMenu" class="menu hidden">
-  <button onclick="setShape('square')">Square</button>
-  <button onclick="setShape('circle')">Circle</button>
-  <button onclick="setShape('triangle')">Triangle</button>
-  <button onclick="setShape('heart')">Heart</button>
-  <button onclick="backSettings()">BACK</button>
+  <button onclick="setShape('square')">SQUARE</button>
+  <button onclick="setShape('circle')">CIRCLE</button>
+  <button onclick="setShape('triangle')">TRIANGLE</button>
+  <button onclick="setShape('heart')">HEART</button>
+  <button onclick="backToSettings()">BACK</button>
 </div>
 
-<!-- COLOR OPTIONS -->
+<!-- COLOR -->
 <div id="colorMenu" class="menu hidden">
-  <button class="colorBtn" style="background:red" onclick="setColor('red')"></button>
-  <button class="colorBtn" style="background:white" onclick="setColor('white')"></button>
-  <button class="colorBtn" style="background:green" onclick="setColor('green')"></button>
-  <button class="colorBtn" style="background:yellow" onclick="setColor('yellow')"></button>
-  <button onclick="backSettings()">BACK</button>
+  <button class="colorBtn" style="background:red" onclick="setColor('red')">RED</button>
+  <button class="colorBtn" style="background:blue" onclick="setColor('blue')">BLUE</button>
+  <button class="colorBtn" style="background:green" onclick="setColor('green')">GREEN</button>
+  <button class="colorBtn" style="background:yellow" onclick="setColor('yellow')">YELLOW</button>
+  <button class="colorBtn" style="background:white" onclick="setColor('white')">WHITE</button>
+  <button onclick="backToSettings()">BACK</button>
 </div>
 
 <!-- TEXT -->
 <div id="textMenu" class="menu hidden">
-  <input id="textInput" placeholder="Enter name">
+  <input id="textInput" placeholder="Enter text">
   <button onclick="saveText()">SAVE</button>
-  <button onclick="backSettings()">BACK</button>
+  <button onclick="backToSettings()">BACK</button>
 </div>
 
 <!-- GAME -->
 <canvas id="game" width="400" height="500"></canvas>
 <button id="jumpBtn" onclick="jump()">JUMP</button>
-<button id="shieldBtn">SHIELD</button>
-<button id="restartBtn" onclick="goMenu()">START</button>
+<button id="startBtn" onclick="goToMenu()">START</button>
 
 <script>
 const canvas = document.getElementById("game");
@@ -133,23 +128,23 @@ let settings = {
   text: "SXJ"
 };
 
-/* MENU CONTROL */
+/* MENU FLOW */
 function openSettings(){
   mainMenu.classList.add("hidden");
   settingsMenu.classList.remove("hidden");
 }
 
-function backMenu(){
+function backToMain(){
   settingsMenu.classList.add("hidden");
   mainMenu.classList.remove("hidden");
 }
 
-function showSection(type){
+function openSub(type){
   settingsMenu.classList.add("hidden");
   document.getElementById(type+"Menu").classList.remove("hidden");
 }
 
-function backSettings(){
+function backToSettings(){
   playerMenu.classList.add("hidden");
   colorMenu.classList.add("hidden");
   textMenu.classList.add("hidden");
@@ -157,36 +152,34 @@ function backSettings(){
 }
 
 /* SETTINGS ACTIONS */
-function setShape(s){ settings.shape = s; }
-function setColor(c){ settings.color = c; }
+function setShape(s){ settings.shape=s; }
+function setColor(c){ settings.color=c; }
+
 function saveText(){
   let val = document.getElementById("textInput").value;
   if(val) settings.text = val.toUpperCase();
-  backSettings();
+  backToSettings();
 }
 
 /* GAME */
-let player, spikes=[], running=false, score=0, spawnTimer=0;
+let player, spikes=[], running=false, timer=0;
 
 function startGame(){
   mainMenu.classList.add("hidden");
   canvas.style.display="block";
   jumpBtn.style.display="block";
-  shieldBtn.style.display="block";
-  restartBtn.style.display="none";
+  startBtn.style.display="none";
 
   player = {x:50,y:400,vy:0,jumping:false};
   spikes=[];
-  score=0;
   running=true;
-  spawnTimer=0;
+  timer=0;
 }
 
-function goMenu(){
-  restartBtn.style.display="none";
+function goToMenu(){
   canvas.style.display="none";
   jumpBtn.style.display="none";
-  shieldBtn.style.display="none";
+  startBtn.style.display="none";
   mainMenu.classList.remove("hidden");
 }
 
@@ -245,10 +238,10 @@ function loop(){
       player.jumping=false;
     }
 
-    spawnTimer++;
-    if(spawnTimer>120){ // GOOD SPACING
+    timer++;
+    if(timer>130){
       spikes.push({x:400});
-      spawnTimer=0;
+      timer=0;
     }
 
     for(let s of spikes){
@@ -263,14 +256,13 @@ function loop(){
 
       if(s.x<player.x+30 && s.x+30>player.x && player.y>370){
         running=false;
-        restartBtn.style.display="block";
+        startBtn.style.display="block";
       }
     }
 
     spikes=spikes.filter(s=>s.x>-50);
 
     drawPlayer();
-    score++;
 
   } else {
     ctx.fillText("GAME OVER",130,250);
