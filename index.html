@@ -7,12 +7,13 @@
 <style>
 body {
   margin: 0;
-  background: black;
   overflow: hidden;
+  background: black;
   font-family: Arial;
+  color: white;
 }
 
-/* SCREENS */
+/* SCREEN SYSTEM */
 .screen {
   position: fixed;
   width: 100%;
@@ -22,10 +23,9 @@ body {
   justify-content: center;
   align-items: center;
   gap: 12px;
-  color: white;
 }
 
-/* EXIT BUTTON */
+/* EXIT */
 #exitBtn {
   position: fixed;
   top: 10px;
@@ -36,8 +36,8 @@ body {
 /* BUTTON ANIMATION */
 button {
   padding: 14px 20px;
-  border-radius: 10px;
   border: none;
+  border-radius: 10px;
   transition: 0.15s;
 }
 
@@ -46,13 +46,21 @@ button:active {
   opacity: 0.6;
 }
 
+/* BACK BUTTON (CENTER BOTTOM) */
+.backBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 /* CANVAS */
 canvas {
   display: none;
   background: black;
 }
 
-/* GAME CONTROLS (INSIDE SCREEN FIX) */
+/* GAME CONTROLS */
 #jumpBtn {
   position: fixed;
   bottom: 20px;
@@ -73,7 +81,6 @@ canvas {
 
 <body>
 
-<!-- EXIT -->
 <button id="exitBtn" onclick="exitGame()">EXIT</button>
 
 <!-- MENU -->
@@ -82,12 +89,12 @@ canvas {
   <button onclick="show('settings')">SETTINGS</button>
 </div>
 
-<!-- SETTINGS MAIN -->
+<!-- SETTINGS -->
 <div id="settings" class="screen">
   <button onclick="show('player')">Change Player</button>
   <button onclick="show('color')">Change Color</button>
   <button onclick="show('name')">Change Name</button>
-  <button onclick="backToMenu()">BACK</button>
+  <button class="backBtn" onclick="show('menu')">BACK</button>
 </div>
 
 <!-- PLAYER -->
@@ -97,6 +104,8 @@ canvas {
   <button onclick="setShape('rect')">Rectangle</button>
   <button onclick="setShape('triangle')">Triangle</button>
   <button onclick="setShape('heart')">Heart</button>
+
+  <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
 <!-- COLOR -->
@@ -106,13 +115,16 @@ canvas {
   <button onclick="setColor('yellow')" style="background:yellow;color:black">YELLOW</button>
   <button onclick="setColor('blue')" style="background:blue">BLUE</button>
   <button onclick="setColor('white')" style="background:white;color:black">WHITE</button>
+
+  <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
 <!-- NAME -->
 <div id="name" class="screen">
   <input id="nameInput" placeholder="Enter name">
   <button onclick="saveName()">SAVE</button>
-  <button onclick="show('settings')">BACK</button>
+
+  <button class="backBtn" onclick="show('settings')">BACK</button>
 </div>
 
 <!-- GAME -->
@@ -123,27 +135,25 @@ canvas {
 
 <!-- BGM -->
 <audio id="bgm" loop>
-  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d1d3c3f1f1.mp3?filename=retro-game-arcade-116819.mp3" type="audio/mpeg">
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d1d3c3f1f1.mp3?filename=retro-game-arcade-116819.mp3">
 </audio>
 
 <script>
 
-/* STATE */
-let state = "menu";
-let shape = "square";
-let color = "white";
-let playerName = "SXJ";
+let shape="square";
+let color="white";
+let playerName="SXJ";
 
-/* GAME */
-let canvas = document.getElementById("game");
-let ctx = canvas.getContext("2d");
+/* GAME STATE */
+let canvas=document.getElementById("game");
+let ctx=canvas.getContext("2d");
 
 let player, objects=[], bullets=[];
 let timer=0, pattern=0;
 let running=false;
 let shieldActive=false;
 
-/* SCREEN CONTROL */
+/* SCREEN */
 function show(id){
   ["menu","settings","player","color","name"].forEach(x=>{
     document.getElementById(x).style.display="none";
@@ -153,15 +163,10 @@ function show(id){
   }
 }
 
-/* MENU BACK */
-function backToMenu(){
-  show("menu");
-}
-
 /* EXIT */
 function exitGame(){
   window.close();
-  alert("Close tab manually (browser restricts auto-close)");
+  alert("Close tab manually");
 }
 
 /* SETTINGS */
@@ -169,11 +174,11 @@ function setShape(s){ shape=s; }
 function setColor(c){ color=c; }
 
 function saveName(){
-  playerName = document.getElementById("nameInput").value || "PLAYER";
+  playerName=document.getElementById("nameInput").value||"PLAYER";
   show("settings");
 }
 
-/* START GAME */
+/* START */
 function startGame(){
   show("");
 
@@ -183,7 +188,7 @@ function startGame(){
 
   document.getElementById("bgm").play();
 
-  player = {x:50,y:400,vy:0,jumping:false,w:30,h:30};
+  player={x:50,y:400,vy:0,jumping:false,w:30,h:30};
 
   objects=[];
   bullets=[];
@@ -205,16 +210,9 @@ function shield(){
   setTimeout(()=>shieldActive=false,1200);
 }
 
-/* PATTERN:
-1 spike
-gap
-1 spike
-enemy SHAN
-enemy RAJEEN
-repeat
-*/
+/* PATTERN */
 function spawn(){
-  let t = pattern % 5;
+  let t=pattern%5;
 
   if(t===0) objects.push({type:"spike",x:400});
   if(t===1) objects.push({type:"spike",x:460});
@@ -240,11 +238,10 @@ function loop(){
 
 ctx.clearRect(0,0,400,500);
 
-if(!player){ requestAnimationFrame(loop); return; }
+if(!player){requestAnimationFrame(loop);return;}
 
 if(running){
 
-  /* PLAYER */
   player.vy+=0.6;
   player.y+=player.vy;
 
@@ -254,14 +251,12 @@ if(running){
     player.jumping=false;
   }
 
-  /* SPAWN */
   timer++;
   if(timer>140){
     spawn();
     timer=0;
   }
 
-  /* OBJECTS */
   for(let o of objects){
     o.x-=2.5;
 
@@ -275,7 +270,7 @@ if(running){
 
       let box={x:o.x,y:400,w:30,h:30};
 
-      if(hit(player,box) && !shieldActive){
+      if(hit(player,box)&&!shieldActive){
         running=false;
       }
     }
@@ -296,13 +291,12 @@ if(running){
     }
   }
 
-  /* BULLETS */
   for(let b of bullets){
     b.x-=4;
     ctx.fillStyle="yellow";
     ctx.fillRect(b.x,b.y,5,5);
 
-    if(hit(player,b) && !shieldActive){
+    if(hit(player,b)&&!shieldActive){
       running=false;
     }
   }
@@ -310,7 +304,6 @@ if(running){
   objects=objects.filter(o=>o.x>-100);
   bullets=bullets.filter(b=>b.x>-100);
 
-  /* PLAYER */
   ctx.fillStyle=color;
   ctx.fillRect(player.x,player.y,30,30);
 
