@@ -13,157 +13,174 @@ body {
   color: white;
 }
 
-/* CANVAS */
+.screen {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+button {
+  padding: 14px 20px;
+  border-radius: 10px;
+  border: none;
+}
+
+button:active {
+  transform: scale(0.9);
+  opacity: 0.6;
+}
+
+.backBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 canvas {
   display: none;
   background: black;
 }
 
-/* MENU */
-#menu {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 15px;
-  z-index: 5;
-}
-
-/* SCORE */
-#score {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  font-size: 20px;
-  display: none;
-  z-index: 10;
-}
-
-/* BUTTONS */
-#jumpBtn, #shieldBtn {
+#jumpBtn {
   position: fixed;
   bottom: 20px;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 10px;
+  left: 20px;
   display: none;
-  z-index: 10;
 }
 
-#jumpBtn { left: 20px; }
-#shieldBtn { right: 20px; }
+#shieldBtn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: none;
+}
 
-/* RESTART TOP CENTER */
+/* ✅ FIXED RESTART BUTTON (YOUR REQUEST) */
 #restartBtn {
   position: fixed;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
+  display: none;
+  font-size: 16px;
   background: white;
   color: black;
-  padding: 10px 16px;
-  border: none;
+  padding: 10px 18px;
   border-radius: 8px;
-  display: none;
-  z-index: 20;
-}
-
-/* GAME OVER SCREEN */
-#gameOver {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  background: rgba(0,0,0,0.6);
-  z-index: 30;
-}
-
-#gameOverText {
-  font-size: 40px;
-  margin-bottom: 20px;
+  border: none;
+  z-index: 999;
 }
 </style>
 </head>
 
 <body>
 
-<!-- MENU SCREEN -->
-<div id="menu">
-  <h1>SPACE RUNNER</h1>
+<!-- MENU -->
+<div id="menu" class="screen" style="display:flex;">
   <button onclick="startGame()">PLAY</button>
 </div>
 
 <canvas id="game" width="400" height="500"></canvas>
 
-<div id="score">Score: 0</div>
-
 <button id="jumpBtn" onclick="jump()">JUMP</button>
 <button id="shieldBtn" onclick="shield()">SHIELD</button>
-<button id="restartBtn" onclick="startGame()">RESTART</button>
-
-<div id="gameOver">
-  <div id="gameOverText">GAME OVER</div>
-</div>
+<button id="restartBtn" onclick="restartGame()">RESTART</button>
 
 <script>
 
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+/* STATE */
+let canvas = document.getElementById("game");
+let ctx = canvas.getContext("2d");
 
-let player, enemies=[];
+let player, objects=[], bullets=[];
 let running=false;
+let timer=0;
+let pattern=0;
+let shieldActive=false;
 let score=0;
-let scoreTick=0;
-let spawnTimer=0;
+
+/* SOUND */
+function beep(freq,duration){
+  let ctxAudio = new (window.AudioContext || window.webkitAudioContext)();
+  let osc = ctxAudio.createOscillator();
+  let gain = ctxAudio.createGain();
+
+  osc.connect(gain);
+  gain.connect(ctxAudio.destination);
+
+  osc.frequency.value = freq;
+  osc.start();
+  osc.stop(ctxAudio.currentTime + duration/1000);
+}
 
 /* START GAME */
 function startGame(){
 
   document.getElementById("menu").style.display="none";
-  document.getElementById("gameOver").style.display="none";
 
   canvas.style.display="block";
-  document.getElementById("score").style.display="block";
   document.getElementById("jumpBtn").style.display="block";
   document.getElementById("shieldBtn").style.display="block";
+
+  player={x:50,y:400,vy:0,jumping:false,w:30,h:30};
+
+  objects=[];
+  bullets=[];
+  timer=0;
+  pattern=0;
+  score=0;
+  running=true;
+
+  beep(600,100);
+}
+
+/* RESTART */
+function restartGame(){
   document.getElementById("restartBtn").style.display="none";
-
-  player = {x:50,y:400,vy:0,prevY:400,jumping:false};
-  enemies = [];
-
-  score = 0;
-  scoreTick = 0;
-  spawnTimer = 0;
-
-  running = true;
+  startGame();
 }
 
 /* CONTROLS */
 function jump(){
   if(!player.jumping){
-    player.vy = -12;
-    player.jumping = true;
+    player.vy=-12;
+    player.jumping=true;
+    beep(800,80);
   }
 }
 
-function shield(){}
-
-/* SPAWN */
-function spawnEnemy(){
-  enemies.push({x:400,alive:true});
+function shield(){
+  shieldActive=true;
+  setTimeout(()=>shieldActive=false,1200);
+  beep(300,120);
 }
 
-/* GAME OVER */
-function gameOver(){
-  running = false;
-  document.getElementById("gameOver").style.display="flex";
-  document.getElementById("restartBtn").style.display="block";
+/* SPAWN */
+function spawn(){
+  let t=pattern%5;
+
+  if(t===0) objects.push({type:"spike",x:400});
+  if(t===1) objects.push({type:"spike",x:460});
+  if(t===3) objects.push({type:"enemy",x:400,cd:0,name:"SHAN"});
+  if(t===4) objects.push({type:"enemy",x:400,cd:0,name:"RAJEEN"});
+
+  pattern++;
+}
+
+/* COLLISION */
+function hit(a,b){
+  return (
+    a.x < b.x+b.w &&
+    a.x+a.w > b.x &&
+    a.y < b.y+b.h &&
+    a.y+a.h > b.y
+  );
 }
 
 /* LOOP */
@@ -175,75 +192,89 @@ if(!player){requestAnimationFrame(loop);return;}
 
 if(running){
 
-  /* SCORE = 1 PER SECOND */
-  scoreTick++;
-  if(scoreTick >= 60){
-    score++;
-    scoreTick = 0;
+  score += 1;
+
+  player.vy+=0.6;
+  player.y+=player.vy;
+
+  if(player.y>400){
+    player.y=400;
+    player.vy=0;
+    player.jumping=false;
   }
 
-  document.getElementById("score").innerText = "Score: " + score;
-
-  /* PLAYER */
-  player.prevY = player.y;
-
-  player.vy += 0.6;
-  player.y += player.vy;
-
-  if(player.y > 400){
-    player.y = 400;
-    player.vy = 0;
-    player.jumping = false;
+  timer++;
+  if(timer>140){
+    spawn();
+    timer=0;
   }
 
-  /* SPAWN */
-  spawnTimer++;
-  if(spawnTimer > 100){
-    spawnEnemy();
-    spawnTimer = 0;
-  }
+  for(let o of objects){
+    o.x-=2.5;
 
-  /* ENEMIES */
-  for(let e of enemies){
+    if(o.type==="spike"){
+      ctx.fillStyle="red";
+      ctx.beginPath();
+      ctx.moveTo(o.x,430);
+      ctx.lineTo(o.x+15,400);
+      ctx.lineTo(o.x+30,430);
+      ctx.fill();
 
-    if(!e.alive) continue;
+      let box={x:o.x,y:400,w:30,h:30};
 
-    e.x -= 3;
-
-    ctx.fillStyle="orange";
-    ctx.fillRect(e.x,400,30,30);
-
-    let enemyTop = 400;
-
-    let falling = player.vy > 0;
-    let wasAbove = player.prevY + 30 <= enemyTop;
-
-    if(player.x < e.x+30 && player.x+30 > e.x){
-
-      if(falling && wasAbove){
-        e.alive = false;
-        player.vy = -8;
-        score += 5;
-      } else {
+      if(hit(player,box)&&!shieldActive){
         gameOver();
       }
     }
+
+    if(o.type==="enemy"){
+      ctx.fillStyle="orange";
+      ctx.fillRect(o.x,380,30,30);
+
+      o.cd++;
+      if(o.cd>60){
+        bullets.push({x:o.x,y:400,w:5,h:5});
+        o.cd=0;
+      }
+
+      ctx.fillStyle="white";
+      ctx.fillText(o.name,o.x,370);
+    }
   }
 
-  enemies = enemies.filter(e => e.x > -100 && e.alive);
+  for(let b of bullets){
+    b.x-=4;
+    ctx.fillStyle="yellow";
+    ctx.fillRect(b.x,b.y,5,5);
 
-  /* PLAYER */
+    if(hit(player,b)&&!shieldActive){
+      gameOver();
+    }
+  }
+
+  objects=objects.filter(o=>o.x>-100);
+  bullets=bullets.filter(b=>b.x>-100);
+
   ctx.fillStyle="lime";
   ctx.fillRect(player.x,player.y,30,30);
 
-}else{
+  ctx.fillStyle="white";
+  ctx.fillText("Score: " + score,10,20);
 
+}else{
   ctx.fillStyle="white";
   ctx.font="30px Arial";
-  ctx.fillText("GAME OVER",120,250);
+  ctx.fillText("GAME OVER",110,250);
 }
 
 requestAnimationFrame(loop);
+}
+
+/* GAME OVER */
+function gameOver(){
+  running=false;
+  document.getElementById("restartBtn").style.display="block";
+  beep(150,300);
 }
 
 loop();
