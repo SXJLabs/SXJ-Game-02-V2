@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Runner Game</title>
+<title>Space Runner</title>
 
 <style>
 body {
@@ -13,9 +13,23 @@ body {
   color: white;
 }
 
+/* CANVAS */
 canvas {
-  display: block;
+  display: none;
   background: black;
+}
+
+/* MENU */
+#menu {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 15px;
+  z-index: 5;
 }
 
 /* SCORE */
@@ -24,6 +38,7 @@ canvas {
   top: 10px;
   right: 10px;
   font-size: 20px;
+  display: none;
   z-index: 10;
 }
 
@@ -32,8 +47,9 @@ canvas {
   position: fixed;
   bottom: 20px;
   padding: 12px 16px;
-  border-radius: 10px;
   border: none;
+  border-radius: 10px;
+  display: none;
   z-index: 10;
 }
 
@@ -46,10 +62,11 @@ canvas {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 10px 16px;
   background: white;
   color: black;
+  padding: 10px 16px;
   border: none;
+  border-radius: 8px;
   display: none;
   z-index: 20;
 }
@@ -76,6 +93,12 @@ canvas {
 
 <body>
 
+<!-- MENU SCREEN -->
+<div id="menu">
+  <h1>SPACE RUNNER</h1>
+  <button onclick="startGame()">PLAY</button>
+</div>
+
 <canvas id="game" width="400" height="500"></canvas>
 
 <div id="score">Score: 0</div>
@@ -97,11 +120,18 @@ let player, enemies=[];
 let running=false;
 let score=0;
 let scoreTick=0;
+let spawnTimer=0;
 
 /* START GAME */
 function startGame(){
 
+  document.getElementById("menu").style.display="none";
   document.getElementById("gameOver").style.display="none";
+
+  canvas.style.display="block";
+  document.getElementById("score").style.display="block";
+  document.getElementById("jumpBtn").style.display="block";
+  document.getElementById("shieldBtn").style.display="block";
   document.getElementById("restartBtn").style.display="none";
 
   player = {x:50,y:400,vy:0,prevY:400,jumping:false};
@@ -109,6 +139,7 @@ function startGame(){
 
   score = 0;
   scoreTick = 0;
+  spawnTimer = 0;
 
   running = true;
 }
@@ -123,15 +154,9 @@ function jump(){
 
 function shield(){}
 
-/* SPAWN ENEMY */
-let spawnTimer=0;
-function spawn(){
+/* SPAWN */
+function spawnEnemy(){
   enemies.push({x:400,alive:true});
-}
-
-/* COLLISION */
-function hit(a,b){
-  return a.x < b.x+30 && a.x+30 > b.x && a.y < 430 && a.y+30 > 400;
 }
 
 /* GAME OVER */
@@ -154,10 +179,10 @@ if(running){
   scoreTick++;
   if(scoreTick >= 60){
     score++;
-    scoreTick=0;
+    scoreTick = 0;
   }
 
-  document.getElementById("score").innerText="Score: "+score;
+  document.getElementById("score").innerText = "Score: " + score;
 
   /* PLAYER */
   player.prevY = player.y;
@@ -174,12 +199,13 @@ if(running){
   /* SPAWN */
   spawnTimer++;
   if(spawnTimer > 100){
-    spawn();
-    spawnTimer=0;
+    spawnEnemy();
+    spawnTimer = 0;
   }
 
   /* ENEMIES */
   for(let e of enemies){
+
     if(!e.alive) continue;
 
     e.x -= 3;
@@ -187,15 +213,15 @@ if(running){
     ctx.fillStyle="orange";
     ctx.fillRect(e.x,400,30,30);
 
-    let enemyBox = {x:e.x,y:400};
+    let enemyTop = 400;
 
     let falling = player.vy > 0;
-    let wasAbove = player.prevY + 30 <= 400;
+    let wasAbove = player.prevY + 30 <= enemyTop;
 
     if(player.x < e.x+30 && player.x+30 > e.x){
 
       if(falling && wasAbove){
-        e.alive=false;
+        e.alive = false;
         player.vy = -8;
         score += 5;
       } else {
@@ -204,13 +230,14 @@ if(running){
     }
   }
 
-  enemies = enemies.filter(e=>e.x>-100 && e.alive);
+  enemies = enemies.filter(e => e.x > -100 && e.alive);
 
   /* PLAYER */
   ctx.fillStyle="lime";
   ctx.fillRect(player.x,player.y,30,30);
 
 }else{
+
   ctx.fillStyle="white";
   ctx.font="30px Arial";
   ctx.fillText("GAME OVER",120,250);
@@ -219,7 +246,6 @@ if(running){
 requestAnimationFrame(loop);
 }
 
-startGame();
 loop();
 
 </script>
