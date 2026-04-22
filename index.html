@@ -25,37 +25,38 @@ body {
   gap: 15px;
 }
 
-/* STRONG BUTTON FEEDBACK */
+/* BUTTONS */
 button {
   padding: 14px 22px;
   font-size: 18px;
   border: none;
   border-radius: 10px;
-  transition: 0.15s;
   background: #222;
   color: white;
+  transition: 0.15s;
 }
 
-/* REAL CLICK ANIMATION */
+/* CLICK ANIMATION */
 button:active {
   transform: scale(0.9);
-  background: #000;
-  box-shadow: 0 0 15px white;
+  background: black;
+  box-shadow: 0 0 12px white;
 }
 
 /* CANVAS */
 canvas {
   display: none;
-  margin: 60px auto;
+  margin: 0 auto;
   border: 2px solid white;
 }
 
-/* GAME BUTTONS */
+/* GAME BUTTONS (FIXED FOR MOBILE) */
 #jumpBtn {
   position: fixed;
-  bottom: 25px;
+  bottom: 30px;
   left: 20px;
   display: none;
+  z-index: 10;
 }
 
 /* START BUTTON */
@@ -65,13 +66,20 @@ canvas {
   left: 50%;
   transform: translate(-50%,-50%);
   display: none;
+  z-index: 10;
+}
+
+/* TEXT INPUT */
+input {
+  padding: 10px;
+  font-size: 16px;
 }
 </style>
 </head>
 
 <body>
 
-<!-- MAIN -->
+<!-- MAIN MENU -->
 <div id="main" class="screen" style="display:flex;">
   <button onclick="startGame()">PLAY</button>
   <button onclick="show('settings')">SETTINGS</button>
@@ -106,7 +114,7 @@ canvas {
 
 <!-- TEXT -->
 <div id="text" class="screen">
-  <input id="textInput" placeholder="Enter name">
+  <input id="textInput" placeholder="Enter text">
   <button onclick="saveText()">SAVE</button>
   <button onclick="show('settings')">BACK</button>
   <p id="msg"></p>
@@ -119,7 +127,7 @@ canvas {
 
 <script>
 
-/* SCREEN CONTROL (FIXED) */
+/* SCREEN CONTROL */
 function show(id){
   const screens = ["main","settings","player","color","text"];
   screens.forEach(s=>{
@@ -142,62 +150,78 @@ function setShape(s){ settings.shape=s; }
 function setColor(c){ settings.color=c; }
 
 function saveText(){
-  let v=document.getElementById("textInput").value;
+  let v = document.getElementById("textInput").value;
   if(v.trim() !== ""){
     settings.text = v.toUpperCase();
-    document.getElementById("msg").innerText="SAVED ✔";
-    setTimeout(()=>document.getElementById("msg").innerText="",1000);
+    document.getElementById("msg").innerText = "SAVED ✔";
+
+    setTimeout(()=>{
+      document.getElementById("msg").innerText = "";
+    },1000);
   }
 }
 
-/* GAME */
+/* GAME STATE */
 let canvas, ctx;
-let player, spikes=[], running=false, timer=0;
+let player, spikes = [];
+let running = false;
+let timer = 0;
 
+/* START GAME */
 function startGame(){
   show("");
 
-  canvas=document.getElementById("game");
-  ctx=canvas.getContext("2d");
+  canvas = document.getElementById("game");
+  ctx = canvas.getContext("2d");
 
-  canvas.style.display="block";
-  jumpBtn.style.display="block";
-  startBtn.style.display="none";
+  canvas.style.display = "block";
+  document.getElementById("jumpBtn").style.display = "block";
+  document.getElementById("startBtn").style.display = "none";
 
-  player={x:50,y:400,vy:0,jumping:false};
-  spikes=[];
-  running=true;
-  timer=0;
+  player = {
+    x:50,
+    y:400,
+    vy:0,
+    jumping:false
+  };
+
+  spikes = [];
+  timer = 0;
+  running = true;
+
+  ctx.clearRect(0,0,400,500);
 }
 
+/* RESTART */
 function restart(){
-  canvas.style.display="none";
-  jumpBtn.style.display="none";
-  startBtn.style.display="none";
+  canvas.style.display = "none";
+  document.getElementById("jumpBtn").style.display = "none";
+  document.getElementById("startBtn").style.display = "none";
   show("main");
 }
 
+/* JUMP */
 function jump(){
   if(!player.jumping){
-    player.vy=-12;
-    player.jumping=true;
+    player.vy = -12;
+    player.jumping = true;
   }
 }
 
-/* PLAYER */
+/* DRAW PLAYER */
 function drawPlayer(){
-  ctx.fillStyle=settings.color;
+  ctx.fillStyle = settings.color;
 
-  if(settings.shape==="square")
+  if(settings.shape === "square")
     ctx.fillRect(player.x,player.y,30,30);
 
-  if(settings.shape==="circle"){
+  if(settings.shape === "circle"){
     ctx.beginPath();
     ctx.arc(player.x+15,player.y+15,15,0,Math.PI*2);
     ctx.fill();
   }
 
-  if(settings.shape==="triangle"){
+  if(settings.shape === "triangle"){
     ctx.beginPath();
     ctx.moveTo(player.x,player.y+30);
     ctx.lineTo(player.x+15,player.y);
@@ -205,18 +229,18 @@ function drawPlayer(){
     ctx.fill();
   }
 
-  if(settings.shape==="heart"){
+  if(settings.shape === "heart"){
     ctx.beginPath();
     ctx.moveTo(player.x+15,player.y+30);
     ctx.bezierCurveTo(player.x-10,player.y,player.x+40,player.y,player.x+15,player.y+30);
     ctx.fill();
   }
 
-  ctx.fillStyle="white";
+  ctx.fillStyle = "white";
   ctx.fillText(settings.text,player.x,player.y-5);
 }
 
-/* LOOP */
+/* GAME LOOP */
 function loop(){
   if(!ctx) return;
 
@@ -224,43 +248,48 @@ function loop(){
 
   if(running){
 
-    player.vy+=0.6;
-    player.y+=player.vy;
+    player.vy += 0.6;
+    player.y += player.vy;
 
-    if(player.y>400){
-      player.y=400;
-      player.vy=0;
-      player.jumping=false;
+    if(player.y > 400){
+      player.y = 400;
+      player.vy = 0;
+      player.jumping = false;
     }
 
     timer++;
-    if(timer>140){
+
+    if(timer > 140){
       spikes.push({x:400});
-      timer=0;
+      timer = 0;
     }
 
     for(let s of spikes){
-      s.x-=3;
+      s.x -= 3;
 
-      ctx.fillStyle="red";
+      ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.moveTo(s.x,430);
       ctx.lineTo(s.x+15,400);
       ctx.lineTo(s.x+30,430);
       ctx.fill();
 
-      if(s.x<player.x+30 && s.x+30>player.x && player.y>370){
-        running=false;
-        startBtn.style.display="block";
+      if(
+        s.x < player.x+30 &&
+        s.x+30 > player.x &&
+        player.y > 370
+      ){
+        running = false;
+        document.getElementById("startBtn").style.display = "block";
       }
     }
 
-    spikes = spikes.filter(s=>s.x>-50);
+    spikes = spikes.filter(s => s.x > -50);
 
     drawPlayer();
 
   } else {
-    ctx.fillStyle="white";
+    ctx.fillStyle = "white";
     ctx.fillText("GAME OVER",150,250);
   }
 
